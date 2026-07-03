@@ -266,6 +266,52 @@
             min-width: 82px;
         }
 
+        .filter-bar {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+            margin: 12px 0;
+            padding: 12px;
+            border: 1px solid #e8edf5;
+            border-radius: 16px;
+            background: #f8fbff;
+        }
+
+        .filter-field {
+            min-width: 0;
+        }
+
+        .filter-bar label {
+            display: block;
+            margin-bottom: 6px;
+            color: #172554;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .filter-bar select {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1px solid #d8e0ee;
+            border-radius: 12px;
+            background: #fff;
+            color: #111827;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .filter-bar select:disabled {
+            color: #94a3b8;
+            background: #f1f5f9;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 760px) {
+            .filter-bar {
+                grid-template-columns: 1fr;
+            }
+        }
+
         .history-card.active {
             border-color: #2563eb;
             background: linear-gradient(135deg, #eff6ff 0%, #f8fbff 100%);
@@ -437,6 +483,20 @@
     <div class="layout">
         <section class="card panel">
             <h2>面试列表</h2>
+            <div class="filter-bar">
+                <div class="filter-field">
+                    <label for="directionLevel1Filter">一级方向</label>
+                    <select id="directionLevel1Filter" onchange="changeDirectionLevel1Filter()">
+                        <option value="">全部方向</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="directionLevel2Filter">二级方向</label>
+                    <select id="directionLevel2Filter" onchange="changeDirectionFilter()" disabled>
+                        <option value="">全部二级方向</option>
+                    </select>
+                </div>
+            </div>
             <p id="historyPageInfo" class="muted">按创建时间倒序展示，每页 10 条。</p>
             <div id="historyList"></div>
             <div id="historyPagination" class="pagination hidden">
@@ -483,9 +543,14 @@
     let currentHistoryDetail = null;
     let selectedQuestionId = null;
     let currentHistoryPage = 1;
+    let currentDirectionFilter = "";
+    let directionFilterTree = [];
     const historyPageSize = 10;
 
-    window.addEventListener("DOMContentLoaded", loadHistory);
+    window.addEventListener("DOMContentLoaded", async () => {
+        await loadDirectionFilters();
+        await loadHistory();
+    });
 
     async function request(url, options = {}) {
         const response = await fetch(url, {
@@ -501,7 +566,10 @@
 
     async function loadHistory() {
         try {
-            const data = await request(`/api/interview/history?page=${currentHistoryPage}&size=${historyPageSize}`);
+            const directionParam = currentDirectionFilter
+                ? `&direction=${encodeURIComponent(currentDirectionFilter)}`
+                : "";
+            const data = await request(`/api/interview/history?page=${currentHistoryPage}&size=${historyPageSize}${directionParam}`);
             if (!data.records.length && data.total > 0 && currentHistoryPage > 1) {
                 currentHistoryPage = data.totalPages;
                 await loadHistory();
@@ -517,6 +585,69 @@
         } catch (error) {
             alert(error.message);
         }
+    }
+
+    async function loadDirectionFilters() {
+        try {
+            directionFilterTree = await request("/api/interview-directions/tree");
+            const select = document.getElementById("directionLevel1Filter");
+            select.innerHTML = `<option value="">全部方向</option>`;
+            directionFilterTree.forEach(item => {
+                const option = document.createElement("option");
+                option.value = item.name;
+                option.textContent = item.name;
+                select.appendChild(option);
+            });
+            const reviewOption = document.createElement("option");
+            reviewOption.value = "REVIEW";
+            reviewOption.textContent = "复习面试";
+            select.appendChild(reviewOption);
+            renderDirectionLevel2Filter([]);
+        } catch (error) {
+            console.warn("加载方向筛选失败", error);
+        }
+    }
+
+    async function changeDirectionLevel1Filter() {
+        const level1Name = document.getElementById("directionLevel1Filter").value;
+        if (!level1Name || level1Name === "REVIEW") {
+            renderDirectionLevel2Filter([]);
+        } else {
+            const level1 = directionFilterTree.find(item => item.name === level1Name);
+            renderDirectionLevel2Filter(level1 ? level1.children : []);
+        }
+        await changeDirectionFilter();
+    }
+
+    function renderDirectionLevel2Filter(directions) {
+        const select = document.getElementById("directionLevel2Filter");
+        select.innerHTML = `<option value="">全部二级方向</option>`;
+        directions.forEach(item => {
+            const option = document.createElement("option");
+            option.value = item.name;
+            option.textContent = item.name;
+            select.appendChild(option);
+        });
+        select.disabled = directions.length === 0;
+    }
+
+    async function changeDirectionFilter() {
+        currentDirectionFilter = buildDirectionFilterValue();
+        currentHistoryPage = 1;
+        clearDetailPanel("请选择左侧一条历史记录查看详情。");
+        await loadHistory();
+    }
+
+    function buildDirectionFilterValue() {
+        const level1Name = document.getElementById("directionLevel1Filter").value;
+        const level2Name = document.getElementById("directionLevel2Filter").value;
+        if (!level1Name) {
+            return "";
+        }
+        if (level1Name === "REVIEW") {
+            return "REVIEW";
+        }
+        return level2Name ? `${level1Name} / ${level2Name}` : level1Name;
     }
 
     function renderHistoryList(items) {
@@ -548,7 +679,7 @@
                 ? `<button class="continue" title="继续面试" onclick="continueInterview(event, ${item.interviewId})">继续</button>`
                 : "";
             div.innerHTML = `
-                <h3>${escapeHtml(formatPositionType(item.positionType))}</h3>
+                <h3>${escapeHtml(formatPositionTypeForCard(item.positionType))}</h3>
                 <div class="history-score-row">
                     <span class="history-score">${item.totalScore || 0} 分</span>
                     <span class="history-status">${formatStatus(item.status)}</span>
@@ -803,6 +934,15 @@
 
     function formatPositionType(positionType) {
         return positionType === "REVIEW" ? "复习（基于手动提问）" : positionType;
+    }
+
+    function formatPositionTypeForCard(positionType) {
+        const normalized = formatPositionType(positionType);
+        if (positionType === "REVIEW") {
+            return normalized;
+        }
+        const parts = normalized.split("/").map(item => item.trim()).filter(Boolean);
+        return parts.length >= 2 ? parts.slice(-2).join(" / ") : normalized;
     }
 
     function formatTime(value) {

@@ -249,3 +249,8 @@ SELECT p.id, 'SLAM 算法工程师', 3, 10, TRUE, '机器人 SLAM 算法岗位',
 FROM interview_direction p
 WHERE p.name = '机器人算法' AND p.level = 2
   AND NOT EXISTS (SELECT 1 FROM interview_direction c WHERE c.parent_id = p.id AND c.name = 'SLAM 算法工程师');
+
+UPDATE interview_session
+SET position_type = '软件开发方向 / Java / Java 后端开发',
+    updated_at = NOW()
+WHERE position_type IN ('Java高级开发', 'Java 高级开发');

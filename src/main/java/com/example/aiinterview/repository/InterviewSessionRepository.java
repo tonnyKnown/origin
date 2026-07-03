@@ -4,6 +4,7 @@ import com.example.aiinterview.entity.InterviewSession;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 import org.apache.ibatis.annotations.Delete;
@@ -43,6 +44,27 @@ public interface InterviewSessionRepository {
             FROM interview_session
             """)
     long countAll();
+
+    @Select("""
+            SELECT id, position_type, current_index, total_score, status,
+                   overall_comment, improvement_advice, finished_at, created_at, updated_at
+            FROM interview_session
+            WHERE position_type = #{direction}
+               OR position_type LIKE CONCAT(#{direction}, ' /%')
+            ORDER BY created_at DESC
+            LIMIT #{size} OFFSET #{offset}
+            """)
+    List<InterviewSession> findPageByDirectionOrderByCreatedAtDesc(@Param("direction") String direction,
+                                                                   @Param("offset") int offset,
+                                                                   @Param("size") int size);
+
+    @Select("""
+            SELECT COUNT(*)
+            FROM interview_session
+            WHERE position_type = #{direction}
+               OR position_type LIKE CONCAT(#{direction}, ' /%')
+            """)
+    long countByDirection(String direction);
 
     @Insert("""
             INSERT INTO interview_session (

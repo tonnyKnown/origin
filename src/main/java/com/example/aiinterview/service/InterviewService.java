@@ -223,12 +223,19 @@ public class InterviewService {
     }
 
     @Transactional(readOnly = true)
-    public InterviewHistoryPageResponse historyPage(int page, int size) {
+    public InterviewHistoryPageResponse historyPage(int page, int size, String direction) {
         int normalizedPage = Math.max(page, 1);
         int normalizedSize = Math.min(Math.max(size, 1), 50);
         int offset = (normalizedPage - 1) * normalizedSize;
-        long total = sessionRepository.countAll();
-        List<InterviewHistoryItemResponse> records = sessionRepository.findPageOrderByCreatedAtDesc(offset, normalizedSize).stream()
+        String normalizedDirection = normalizeDirection(direction);
+        boolean filterByDirection = normalizedDirection != null;
+        long total = filterByDirection
+                ? sessionRepository.countByDirection(normalizedDirection)
+                : sessionRepository.countAll();
+        List<InterviewSession> sessions = filterByDirection
+                ? sessionRepository.findPageByDirectionOrderByCreatedAtDesc(normalizedDirection, offset, normalizedSize)
+                : sessionRepository.findPageOrderByCreatedAtDesc(offset, normalizedSize);
+        List<InterviewHistoryItemResponse> records = sessions.stream()
                 .map(session -> new InterviewHistoryItemResponse(
                         session.getId(),
                         session.getPositionType(),
@@ -240,6 +247,10 @@ public class InterviewService {
                 .toList();
         int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / normalizedSize);
         return new InterviewHistoryPageResponse(records, total, normalizedPage, normalizedSize, totalPages);
+    }
+
+    public InterviewHistoryPageResponse historyPage(int page, int size) {
+        return historyPage(page, size, null);
     }
 
     @Transactional(readOnly = true)
@@ -447,6 +458,13 @@ public class InterviewService {
 
     private boolean isReviewInterview(String positionType) {
         return REVIEW_POSITION_TYPE.equalsIgnoreCase(positionType);
+    }
+
+    private String normalizeDirection(String direction) {
+        if (direction == null || direction.isBlank() || "ALL".equalsIgnoreCase(direction)) {
+            return null;
+        }
+        return direction.trim();
     }
 
     private void ensureRunning(InterviewSession session) {

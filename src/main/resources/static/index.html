@@ -571,7 +571,7 @@
                 <button class="secondary" onclick="location.href='history.html'">历史记录</button>
                 <button class="secondary" onclick="location.href='manual-questions.html'">手动题库</button>
                 <button class="secondary" onclick="location.href='admin-directions.html'">方向管理</button>
-                <button class="secondary" onclick="loadHistory()">快速复盘</button>
+                <button class="secondary" onclick="location.href='history.html'">快速复盘</button>
             </div>
         </div>
     </section>
@@ -995,7 +995,7 @@
                     const div = document.createElement("div");
                     div.className = "history-item";
                     div.innerHTML = `
-                        <h3>${escapeHtml(formatPositionType(item.positionType))}：${item.totalScore || 0} / 100</h3>
+                        <h3>${escapeHtml(formatPositionTypeForCard(item.positionType))}：${item.totalScore || 0} / 100</h3>
                         <div class="history-meta">
                             状态：${formatStatus(item.status)}<br>
                             开始时间：${formatTime(item.createdAt)}<br>
@@ -1101,6 +1101,15 @@
 
     function formatPositionType(positionType) {
         return positionType === "REVIEW" ? "复习（基于手动提问）" : positionType;
+    }
+
+    function formatPositionTypeForCard(positionType) {
+        const normalized = formatPositionType(positionType);
+        if (positionType === "REVIEW") {
+            return normalized;
+        }
+        const parts = normalized.split("/").map(item => item.trim()).filter(Boolean);
+        return parts.length >= 2 ? parts.slice(-2).join(" / ") : normalized;
     }
 
     function groupHistoryByDirection(items) {

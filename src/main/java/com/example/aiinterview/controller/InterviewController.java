@@ -67,8 +67,9 @@ public class InterviewController {
 
     @GetMapping("/history")
     public InterviewHistoryPageResponse history(@RequestParam(defaultValue = "1") int page,
-                                                @RequestParam(defaultValue = "10") int size) {
-        return interviewService.historyPage(page, size);
+                                                @RequestParam(defaultValue = "10") int size,
+                                                @RequestParam(required = false) String direction) {
+        return interviewService.historyPage(page, size, direction);
     }
 
     @GetMapping("/history/{interviewId}")
