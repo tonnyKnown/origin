@@ -363,7 +363,7 @@
 
             <label>父级方向</label>
             <select id="parentId"></select>
-            <p class="muted">新增一级方向时选择“无父级”。编辑时暂不调整父级。</p>
+            <p class="muted">新增顶层赛道时选择“无父级”。编辑时暂不调整父级。</p>
 
             <label>方向名称</label>
             <input id="name" placeholder="例如：Java 后端开发">
@@ -437,7 +437,7 @@
         const tree = document.getElementById("tree");
         tree.innerHTML = "";
         if (directionTree.length === 0) {
-            tree.innerHTML = `<div class="empty-state">暂无面试方向，点击右侧表单新增一级方向。</div>`;
+            tree.innerHTML = `<div class="empty-state">暂无面试方向，点击右侧表单新增顶层赛道。</div>`;
             return;
         }
         directionTree.forEach(item => tree.appendChild(renderNode(item)));
@@ -545,7 +545,7 @@
 
     function renderParentOptions() {
         const parent = document.getElementById("parentId");
-        parent.innerHTML = `<option value="">无父级（一级方向）</option>`;
+        parent.innerHTML = `<option value="">无父级（顶层赛道）</option>`;
         flatDirections.filter(item => item.level < 3).forEach(item => {
             const option = document.createElement("option");
             option.value = item.id;

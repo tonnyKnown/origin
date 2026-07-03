@@ -550,9 +550,9 @@
                 <h3>方向面试</h3>
                 <p class="muted">适合准备新岗位、切换技术方向或做完整模拟。</p>
                 <div class="direction-helper">
-                    <span>一级行业</span>
-                    <span>二级技术</span>
-                    <span>三级岗位</span>
+                    <span>职业赛道</span>
+                    <span>技术领域</span>
+                    <span>岗位画像</span>
                 </div>
                 <label>面试方向</label>
                 <select id="directionLevel1" onchange="onDirectionLevel1Change()"></select>
@@ -707,20 +707,20 @@
     }
 
     function renderDirectionLevel1() {
-        fillDirectionSelect("directionLevel1", directionTree, "请选择一级方向");
+        fillDirectionSelect("directionLevel1", directionTree, "请选择职业赛道");
         onDirectionLevel1Change();
     }
 
     function onDirectionLevel1Change() {
         const level1 = findDirection(directionTree, document.getElementById("directionLevel1").value);
-        fillDirectionSelect("directionLevel2", level1 ? level1.children : [], "请选择二级方向");
+        fillDirectionSelect("directionLevel2", level1 ? level1.children : [], "请选择技术领域");
         onDirectionLevel2Change();
     }
 
     function onDirectionLevel2Change() {
         const level1 = findDirection(directionTree, document.getElementById("directionLevel1").value);
         const level2 = findDirection(level1 ? level1.children : [], document.getElementById("directionLevel2").value);
-        fillDirectionSelect("directionLevel3", level2 ? level2.children : [], "请选择三级方向");
+        fillDirectionSelect("directionLevel3", level2 ? level2.children : [], "请选择岗位画像");
     }
 
     function fillDirectionSelect(id, directions, placeholder) {

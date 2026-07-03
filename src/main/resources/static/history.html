@@ -485,15 +485,15 @@
             <h2>面试列表</h2>
             <div class="filter-bar">
                 <div class="filter-field">
-                    <label for="directionLevel1Filter">一级方向</label>
+                    <label for="directionLevel1Filter">职业赛道</label>
                     <select id="directionLevel1Filter" onchange="changeDirectionLevel1Filter()">
-                        <option value="">全部方向</option>
+                        <option value="">全部赛道</option>
                     </select>
                 </div>
                 <div class="filter-field">
-                    <label for="directionLevel2Filter">二级方向</label>
+                    <label for="directionLevel2Filter">技术领域</label>
                     <select id="directionLevel2Filter" onchange="changeDirectionFilter()" disabled>
-                        <option value="">全部二级方向</option>
+                        <option value="">全部技术领域</option>
                     </select>
                 </div>
             </div>
@@ -591,7 +591,7 @@
         try {
             directionFilterTree = await request("/api/interview-directions/tree");
             const select = document.getElementById("directionLevel1Filter");
-            select.innerHTML = `<option value="">全部方向</option>`;
+            select.innerHTML = `<option value="">全部赛道</option>`;
             directionFilterTree.forEach(item => {
                 const option = document.createElement("option");
                 option.value = item.name;
@@ -621,7 +621,7 @@
 
     function renderDirectionLevel2Filter(directions) {
         const select = document.getElementById("directionLevel2Filter");
-        select.innerHTML = `<option value="">全部二级方向</option>`;
+        select.innerHTML = `<option value="">全部技术领域</option>`;
         directions.forEach(item => {
             const option = document.createElement("option");
             option.value = item.name;
