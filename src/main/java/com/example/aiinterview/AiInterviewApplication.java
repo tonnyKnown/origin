@@ -13,5 +13,6 @@ public class AiInterviewApplication {
     public static void main(String[] args) {
         log.info("项目启动中0.0");
         SpringApplication.run(AiInterviewApplication.class, args);
+        log.info("项目启动完成0.0");
     }
 }
