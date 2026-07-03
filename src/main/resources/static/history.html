@@ -131,10 +131,49 @@
         }
 
         #historyList {
-            display: grid;
-            grid-template-rows: repeat(10, minmax(58px, 1fr));
-            gap: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
             min-height: calc(100vh - 232px);
+        }
+
+        .direction-group {
+            padding: 10px;
+            border: 1px solid #e8edf5;
+            border-radius: 18px;
+            background: rgba(248, 251, 255, 0.78);
+        }
+
+        .direction-group-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+            padding: 2px 2px 0;
+        }
+
+        .direction-group-title {
+            overflow: hidden;
+            color: #172554;
+            font-weight: 800;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .direction-group-count {
+            flex: 0 0 auto;
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: #eef2ff;
+            color: #1e40af;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .direction-group-list {
+            display: grid;
+            gap: 8px;
         }
 
         .history-card {
@@ -488,17 +527,28 @@
             return;
         }
 
-        items.forEach(item => {
+        groupHistoryByDirection(items).forEach(group => {
+            const groupDiv = document.createElement("div");
+            groupDiv.className = "direction-group";
+            groupDiv.innerHTML = `
+                <div class="direction-group-head">
+                    <div class="direction-group-title">${escapeHtml(group.name)}</div>
+                    <div class="direction-group-count">${group.items.length} 条</div>
+                </div>
+            `;
+            const groupList = document.createElement("div");
+            groupList.className = "direction-group-list";
+            group.items.forEach(item => {
             const div = document.createElement("div");
             div.id = `historyItem-${item.interviewId}`;
             div.className = "history-card";
-            div.title = `${item.positionType}｜${item.totalScore || 0}分｜${formatStatus(item.status)}`;
+            div.title = `${formatPositionType(item.positionType)}｜${item.totalScore || 0}分｜${formatStatus(item.status)}`;
             div.onclick = () => loadHistoryDetail(item.interviewId);
             const continueButton = item.status === "RUNNING"
                 ? `<button class="continue" title="继续面试" onclick="continueInterview(event, ${item.interviewId})">继续</button>`
                 : "";
             div.innerHTML = `
-                <h3>${escapeHtml(item.positionType)}</h3>
+                <h3>${escapeHtml(formatPositionType(item.positionType))}</h3>
                 <div class="history-score-row">
                     <span class="history-score">${item.totalScore || 0} 分</span>
                     <span class="history-status">${formatStatus(item.status)}</span>
@@ -511,8 +561,36 @@
                     <button class="danger" title="删除" onclick="deleteHistory(event, ${item.interviewId})">×</button>
                 </div>
             `;
-            list.appendChild(div);
+                groupList.appendChild(div);
+            });
+            groupDiv.appendChild(groupList);
+            list.appendChild(groupDiv);
         });
+    }
+
+    function groupHistoryByDirection(items) {
+        const groupMap = new Map();
+        items.forEach(item => {
+            const groupName = getDirectionGroupName(item.positionType);
+            if (!groupMap.has(groupName)) {
+                groupMap.set(groupName, []);
+            }
+            groupMap.get(groupName).push(item);
+        });
+        return Array.from(groupMap.entries()).map(([name, groupItems]) => ({
+            name,
+            items: groupItems
+        }));
+    }
+
+    function getDirectionGroupName(positionType) {
+        if (positionType === "REVIEW") {
+            return "复习面试";
+        }
+        const normalized = formatPositionType(positionType);
+        return normalized.includes("/")
+            ? normalized.split("/")[0].trim()
+            : normalized;
     }
 
     function continueInterview(event, interviewId) {
@@ -588,7 +666,7 @@
     function renderHistoryDetail(data) {
         document.getElementById("detailEmpty").classList.add("hidden");
         document.getElementById("detailPanel").classList.remove("hidden");
-        document.getElementById("detailTitle").innerText = data.positionType;
+        document.getElementById("detailTitle").innerText = formatPositionType(data.positionType);
         document.getElementById("totalScore").innerText = data.totalScore || 0;
         document.getElementById("statusText").innerText = formatStatus(data.status);
         document.getElementById("createdAtText").innerText = formatTime(data.createdAt);
@@ -703,7 +781,12 @@
     }
 
     function formatStatus(status) {
-        return status === "FINISHED" ? "已完成" : "进行中";
+        const mapping = {
+            FINISHED: "已完成",
+            CANCELLED: "已取消",
+            RUNNING: "进行中"
+        };
+        return mapping[status] || "进行中";
     }
 
     function formatQuestionType(type) {
@@ -712,9 +795,14 @@
             CONCURRENCY: "JVM/并发八股",
             MIDDLEWARE: "数据库/缓存/中间件",
             PROJECT: "项目实战",
-            ARCHITECTURE: "架构设计"
+            ARCHITECTURE: "架构设计",
+            REVIEW: "复习题"
         };
         return mapping[type] || "未分类";
+    }
+
+    function formatPositionType(positionType) {
+        return positionType === "REVIEW" ? "复习（基于手动提问）" : positionType;
     }
 
     function formatTime(value) {

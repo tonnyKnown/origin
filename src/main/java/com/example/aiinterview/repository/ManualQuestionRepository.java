@@ -34,6 +34,30 @@ public interface ManualQuestionRepository {
     List<ManualQuestion> findAllOrderByCreatedAtDesc();
 
     @Select("""
+            SELECT COUNT(*)
+            FROM manual_question
+            """)
+    long countAll();
+
+    @Select("""
+            SELECT id, question_content, understanding_level, ai_answer, answered_at,
+                   manual_remark, remark_updated_at,
+                   self_test_answer, self_test_score, self_test_comment, self_test_suggestion, self_test_at,
+                   created_at, updated_at
+            FROM manual_question
+            ORDER BY
+                CASE understanding_level
+                    WHEN 'LOW' THEN 1
+                    WHEN 'MEDIUM' THEN 2
+                    ELSE 3
+                END,
+                updated_at DESC,
+                created_at DESC
+            LIMIT 1 OFFSET #{offset}
+            """)
+    ManualQuestion findReviewQuestionByOffset(@Param("offset") int offset);
+
+    @Select("""
             SELECT id, question_content, understanding_level, ai_answer, answered_at,
                    manual_remark, remark_updated_at,
                    self_test_answer, self_test_score, self_test_comment, self_test_suggestion, self_test_at,

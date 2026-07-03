@@ -10,11 +10,14 @@ import com.example.aiinterview.dto.SummaryResponse;
 import com.example.aiinterview.entity.InterviewAnswer;
 import com.example.aiinterview.entity.InterviewQuestion;
 import com.example.aiinterview.entity.InterviewSession;
+import com.example.aiinterview.entity.ManualQuestion;
 import com.example.aiinterview.repository.InterviewAnswerRepository;
 import com.example.aiinterview.repository.InterviewQuestionRepository;
 import com.example.aiinterview.repository.InterviewSessionRepository;
+import com.example.aiinterview.repository.ManualQuestionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -27,29 +30,43 @@ import java.util.stream.Collectors;
 public class InterviewService {
 
     private static final int TOTAL_QUESTIONS = 5;
+    private static final String REVIEW_POSITION_TYPE = "REVIEW";
+    private static final String REVIEW_QUESTION_TYPE = "REVIEW";
+    private static final String STATUS_RUNNING = "RUNNING";
+    private static final String STATUS_FINISHED = "FINISHED";
+    private static final String STATUS_CANCELLED = "CANCELLED";
 
     private final InterviewSessionRepository sessionRepository;
     private final InterviewQuestionRepository questionRepository;
     private final InterviewAnswerRepository answerRepository;
+    private final ManualQuestionRepository manualQuestionRepository;
+    private final InterviewDirectionService directionService;
     private final AiInterviewClient aiInterviewClient;
 
     public InterviewService(InterviewSessionRepository sessionRepository,
                             InterviewQuestionRepository questionRepository,
                             InterviewAnswerRepository answerRepository,
+                            ManualQuestionRepository manualQuestionRepository,
+                            InterviewDirectionService directionService,
                             AiInterviewClient aiInterviewClient) {
         this.sessionRepository = sessionRepository;
         this.questionRepository = questionRepository;
         this.answerRepository = answerRepository;
+        this.manualQuestionRepository = manualQuestionRepository;
+        this.directionService = directionService;
         this.aiInterviewClient = aiInterviewClient;
     }
 
     @Transactional
     public QuestionResponse start(String positionType) {
+        if (!StringUtils.hasText(positionType)) {
+            throw new IllegalArgumentException("面试方向不能为空");
+        }
         InterviewSession session = new InterviewSession();
-        session.setPositionType(positionType);
+        session.setPositionType(positionType.trim());
         session.setCurrentIndex(1);
         session.setTotalScore(0);
-        session.setStatus("RUNNING");
+        session.setStatus(STATUS_RUNNING);
         sessionRepository.insert(session);
 
         InterviewQuestion question = createQuestion(session, 1);
@@ -57,11 +74,22 @@ public class InterviewService {
     }
 
     @Transactional
+    public QuestionResponse startByDirection(Long directionId) {
+        if (directionId == null) {
+            throw new IllegalArgumentException("面试方向不能为空");
+        }
+        return start(directionService.buildDirectionPath(directionId));
+    }
+
+    @Transactional
+    public QuestionResponse startReview() {
+        return start(REVIEW_POSITION_TYPE);
+    }
+
+    @Transactional
     public AnswerScoreResponse submitAnswer(Long interviewId, Long questionId, String userAnswer) {
         InterviewSession session = getSession(interviewId);
-        if ("FINISHED".equals(session.getStatus())) {
-            throw new IllegalStateException("面试已经结束");
-        }
+        ensureRunning(session);
 
         InterviewQuestion question = questionRepository.findById(questionId);
         if (question == null) {
@@ -98,7 +126,7 @@ public class InterviewService {
 
         boolean finished = question.getQuestionIndex() >= TOTAL_QUESTIONS;
         if (finished) {
-            session.setStatus("FINISHED");
+            session.setStatus(STATUS_FINISHED);
             session.setFinishedAt(LocalDateTime.now());
             List<SummaryResponse.QuestionSummary> summaries = buildQuestionSummaries(interviewId);
             session.setOverallComment(buildOverallComment(session.getTotalScore(), summaries));
@@ -125,9 +153,7 @@ public class InterviewService {
     @Transactional
     public QuestionResponse nextQuestion(Long interviewId) {
         InterviewSession session = getSession(interviewId);
-        if ("FINISHED".equals(session.getStatus())) {
-            throw new IllegalStateException("面试已经结束");
-        }
+        ensureRunning(session);
 
         int nextIndex = session.getCurrentIndex();
         InterviewQuestion question = questionRepository.findByInterviewIdAndQuestionIndex(interviewId, nextIndex);
@@ -141,6 +167,22 @@ public class InterviewService {
     @Transactional
     public QuestionResponse continueInterview(Long interviewId) {
         return nextQuestion(interviewId);
+    }
+
+    @Transactional
+    public void cancelInterview(Long interviewId) {
+        InterviewSession session = getSession(interviewId);
+        if (STATUS_FINISHED.equals(session.getStatus())) {
+            throw new IllegalStateException("面试已经完成，不能取消");
+        }
+        if (STATUS_CANCELLED.equals(session.getStatus())) {
+            return;
+        }
+        session.setStatus(STATUS_CANCELLED);
+        session.setFinishedAt(LocalDateTime.now());
+        session.setOverallComment("本次面试已由用户取消。");
+        session.setImprovementAdvice("已取消的面试不会继续生成题目，可重新开始一次新的面试。");
+        sessionRepository.update(session);
     }
 
     @Transactional(readOnly = true)
@@ -280,6 +322,10 @@ public class InterviewService {
     }
 
     private InterviewQuestion createQuestion(InterviewSession session, int questionIndex) {
+        if (isReviewInterview(session.getPositionType())) {
+            return createReviewQuestion(session, questionIndex);
+        }
+
         String askedQuestions = questionRepository.findByInterviewIdOrderByQuestionIndexAsc(session.getId()).stream()
                 .map(InterviewQuestion::getQuestionContent)
                 .collect(Collectors.joining("\n"));
@@ -298,6 +344,35 @@ public class InterviewService {
         question.setQuestionContent(generatedQuestion.questionContent());
         question.setReferenceAnswer(generatedQuestion.referenceAnswer());
         question.setScoringRule(generatedQuestion.scoringRule());
+        questionRepository.insert(question);
+        return question;
+    }
+
+    private InterviewQuestion createReviewQuestion(InterviewSession session, int questionIndex) {
+        long manualQuestionCount = manualQuestionRepository.countAll();
+        if (manualQuestionCount == 0) {
+            throw new IllegalStateException("请先在手动提问记录中添加题目，再开始复习面试");
+        }
+
+        int offset = (int) ((questionIndex - 1) % manualQuestionCount);
+        ManualQuestion manualQuestion = manualQuestionRepository.findReviewQuestionByOffset(offset);
+        if (manualQuestion == null) {
+            throw new IllegalStateException("没有可用于复习的手动题目");
+        }
+
+        String referenceAnswer = manualQuestion.getAiAnswer();
+        if (referenceAnswer == null || referenceAnswer.isBlank()) {
+            referenceAnswer = aiInterviewClient.answerManualQuestion(manualQuestion.getQuestionContent());
+            manualQuestionRepository.updateAnswer(manualQuestion.getId(), referenceAnswer);
+        }
+
+        InterviewQuestion question = new InterviewQuestion();
+        question.setInterviewId(session.getId());
+        question.setQuestionIndex(questionIndex);
+        question.setQuestionType(REVIEW_QUESTION_TYPE);
+        question.setQuestionContent(manualQuestion.getQuestionContent());
+        question.setReferenceAnswer(referenceAnswer);
+        question.setScoringRule("满分20分：核心概念准确8分，回答完整6分，结合实际场景4分，表达清晰2分。评分必须围绕该手动题目本身展开。");
         questionRepository.insert(question);
         return question;
     }
@@ -368,6 +443,19 @@ public class InterviewService {
             case 4 -> "PROJECT";
             default -> "ARCHITECTURE";
         };
+    }
+
+    private boolean isReviewInterview(String positionType) {
+        return REVIEW_POSITION_TYPE.equalsIgnoreCase(positionType);
+    }
+
+    private void ensureRunning(InterviewSession session) {
+        if (STATUS_FINISHED.equals(session.getStatus())) {
+            throw new IllegalStateException("面试已经结束");
+        }
+        if (STATUS_CANCELLED.equals(session.getStatus())) {
+            throw new IllegalStateException("面试已经取消");
+        }
     }
 
     private String buildOverallComment(Integer totalScore, List<SummaryResponse.QuestionSummary> questions) {

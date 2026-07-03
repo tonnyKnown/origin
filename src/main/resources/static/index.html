@@ -85,6 +85,10 @@
             background: #dc2626;
         }
 
+        button.review {
+            background: #7c3aed;
+        }
+
         button:disabled {
             background: #a9b4c7;
         }
@@ -185,6 +189,11 @@
             margin-top: 18px;
         }
 
+        .action-divider {
+            margin: 18px 0 12px;
+            border-top: 1px dashed #dbe3f0;
+        }
+
         .summary-item {
             padding: 12px;
             border: 1px solid #e5eaf3;
@@ -206,53 +215,363 @@
             line-height: 1.7;
         }
 
+        .history-direction-group {
+            margin-top: 14px;
+            padding: 12px;
+            border: 1px solid #e8edf5;
+            border-radius: 16px;
+            background: #f8fbff;
+        }
+
+        .history-direction-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+            color: #172554;
+            font-weight: 800;
+        }
+
+        .history-direction-count {
+            color: #1e40af;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
         .reanswer-box {
             margin-top: 12px;
             padding: 12px;
             background: #f8fafc;
             border-radius: 12px;
         }
+
+        body {
+            background:
+                    radial-gradient(circle at 8% 12%, rgba(59, 130, 246, 0.20), transparent 32%),
+                    radial-gradient(circle at 90% 8%, rgba(124, 58, 237, 0.18), transparent 30%),
+                    linear-gradient(135deg, #f8fbff 0%, #eef4ff 45%, #f7f4ff 100%);
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image:
+                    linear-gradient(rgba(37, 99, 235, 0.05) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(37, 99, 235, 0.05) 1px, transparent 1px);
+            background-size: 34px 34px;
+            mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.75), transparent 78%);
+        }
+
+        .app {
+            width: 1220px;
+            padding: 34px 0 42px;
+        }
+
+        button {
+            transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
+        }
+
+        .home-layout {
+            position: relative;
+            overflow: hidden;
+            grid-template-columns: minmax(0, 1.15fr) 430px;
+            gap: 26px;
+            min-height: 720px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.78);
+            backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.75);
+            box-shadow: 0 28px 70px rgba(58, 83, 142, 0.16);
+        }
+
+        .home-layout::after {
+            content: "";
+            position: absolute;
+            right: 380px;
+            top: -120px;
+            width: 360px;
+            height: 360px;
+            border-radius: 999px;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.16), transparent 65%);
+            pointer-events: none;
+        }
+
+        .hero-main {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 660px;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            width: fit-content;
+            gap: 8px;
+            padding: 8px 12px;
+            color: #1d4ed8;
+            background: rgba(219, 234, 254, 0.78);
+            border: 1px solid rgba(147, 197, 253, 0.58);
+            border-radius: 999px;
+            font-weight: 800;
+            font-size: 13px;
+        }
+
+        .home-title {
+            margin-top: 22px;
+            font-size: 54px;
+            line-height: 1.08;
+            letter-spacing: -0.055em;
+            color: #111827;
+        }
+
+        .home-title span {
+            color: #2563eb;
+        }
+
+        .home-lead {
+            max-width: 720px;
+            margin: 0;
+            color: #475569;
+            font-size: 18px;
+        }
+
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin: 28px 0 26px;
+        }
+
+        .stat-card {
+            padding: 16px;
+            background: rgba(248, 251, 255, 0.82);
+            border: 1px solid rgba(226, 232, 240, 0.88);
+            border-radius: 18px;
+        }
+
+        .stat-value {
+            display: block;
+            color: #1d4ed8;
+            font-size: 28px;
+            font-weight: 900;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .feature-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+            margin-top: auto;
+        }
+
+        .feature-card {
+            position: relative;
+            min-height: 132px;
+            padding: 18px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(248, 251, 255, 0.78));
+            border: 1px solid rgba(219, 226, 239, 0.94);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        }
+
+        .feature-card::before {
+            content: "";
+            position: absolute;
+            top: 18px;
+            right: 18px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #60a5fa;
+            box-shadow: 0 0 18px rgba(96, 165, 250, 0.9);
+        }
+
+        .feature-card h3 {
+            color: #172554;
+            font-size: 18px;
+        }
+
+        .action-panel {
+            position: relative;
+            z-index: 1;
+            padding: 24px;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.90));
+            color: #fff;
+            border: 1px solid rgba(148, 163, 184, 0.32);
+            border-radius: 24px;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+        }
+
+        .action-panel h2 {
+            font-size: 28px;
+        }
+
+        .action-panel .muted {
+            color: #cbd5e1;
+        }
+
+        .action-panel label {
+            color: #e2e8f0;
+        }
+
+        .action-panel select {
+            margin-top: 8px;
+            color: #e5e7eb;
+            background: rgba(15, 23, 42, 0.62);
+            border: 1px solid rgba(148, 163, 184, 0.44);
+            outline: none;
+        }
+
+        .action-panel select:focus {
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.16);
+        }
+
+        .action-panel button {
+            border-radius: 14px;
+        }
+
+        .action-panel button.secondary {
+            background: rgba(255, 255, 255, 0.10);
+            color: #dbeafe;
+            border: 1px solid rgba(191, 219, 254, 0.18);
+        }
+
+        .action-panel button.review {
+            background: linear-gradient(135deg, #7c3aed, #2563eb);
+        }
+
+        .direction-helper {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin: 14px 0 4px;
+        }
+
+        .direction-helper span {
+            padding: 8px;
+            text-align: center;
+            color: #bfdbfe;
+            background: rgba(37, 99, 235, 0.12);
+            border: 1px solid rgba(96, 165, 250, 0.18);
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .mode-card {
+            margin-top: 18px;
+            padding: 14px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .mode-card h3 {
+            margin-bottom: 4px;
+            font-size: 17px;
+        }
+
+        .quick-links {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .quick-links button {
+            min-width: 0;
+            margin-top: 0;
+        }
     </style>
 </head>
 <body>
 <main class="app">
     <section id="home" class="card home-layout">
-        <div>
-            <h1 class="home-title">AI智能面试系统</h1>
-            <p class="home-lead">面向 PC 端使用的模拟面试工具，系统按 Java 基础、JVM/并发、数据库/缓存/中间件、项目实战、架构设计 5 类题目逐题提问，并在每题提交后实时评分和给出改进建议。</p>
+        <div class="hero-main">
+            <div class="hero-badge">AI Interview Copilot · 个性化训练台</div>
+            <h1 class="home-title">让每一次练习<br><span>都像真实面试</span></h1>
+            <p class="home-lead">
+                按行业和岗位方向生成面试题，逐题给出评分、参考答案、点评和改进建议。
+                手动题库可以沉淀错题与高频问题，复习面试会基于个人题库持续强化薄弱点。
+            </p>
+
+            <div class="hero-stats">
+                <div class="stat-card">
+                    <span class="stat-value">3 层</span>
+                    <span class="stat-label">行业 / 技术 / 岗位方向</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">5 题</span>
+                    <span class="stat-label">一轮高密度模拟面试</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">20 分</span>
+                    <span class="stat-label">单题量化评分反馈</span>
+                </div>
+            </div>
+
             <div class="feature-grid">
                 <div class="feature-card">
-                    <h3>逐题评分</h3>
-                    <p class="muted">每题 20 分，提交答案后立即返回得分、点评、总结和标准答案。</p>
+                    <h3>方向面试</h3>
+                    <p class="muted">从软件开发、运维、硬件、机器人等方向进入，按岗位画像生成更贴近真实场景的题目。</p>
                 </div>
                 <div class="feature-card">
-                    <h3>PC 答题</h3>
-                    <p class="muted">首页和答题流程按桌面端宽屏布局设计，适合电脑浏览器操作。</p>
+                    <h3>复习面试</h3>
+                    <p class="muted">从手动提问记录中抽题，优先强化掌握度低的问题，让复习更有针对性。</p>
                 </div>
                 <div class="feature-card">
-                    <h3>历史复盘</h3>
-                    <p class="muted">历史页面支持查看每次面试明细、标准答案和单题重新作答。</p>
+                    <h3>即时反馈</h3>
+                    <p class="muted">每题提交后立即获得分数、回答摘要、AI 点评、参考答案和下一步改进建议。</p>
                 </div>
                 <div class="feature-card">
-                    <h3>能力建议</h3>
-                    <p class="muted">最终基于 5 道题汇总总分，并给出整体评价和提升方向。</p>
+                    <h3>长期沉淀</h3>
+                    <p class="muted">历史面试、重新作答、手动题库和掌握程度标记形成闭环，帮助持续复盘。</p>
                 </div>
             </div>
         </div>
+
         <div class="action-panel">
-            <h2>开始一次面试</h2>
-            <p class="muted">选择面试方向后开始答题。语音识别仍依赖浏览器能力，也可以直接手动输入答案。</p>
-            <label>面试方向</label>
-            <select id="positionType">
-                <option value="Java高级开发">Java高级开发</option>
-                <option value="Java架构师">Java架构师</option>
-                <option value="AI应用开发">AI应用开发</option>
-                <option value="后端微服务架构">后端微服务架构</option>
-            </select>
-            <div class="home-actions">
-                <button onclick="startInterview()">开始面试</button>
-                <button class="secondary" onclick="location.href='history.html'">查看历史面试记录</button>
-                <button class="secondary" onclick="location.href='manual-questions.html'">手动提问记录</button>
+            <h2>开始训练</h2>
+            <p class="muted">选择一个岗位方向开始常规模拟，或直接进入复习面试巩固手动题库。</p>
+
+            <div class="mode-card">
+                <h3>方向面试</h3>
+                <p class="muted">适合准备新岗位、切换技术方向或做完整模拟。</p>
+                <div class="direction-helper">
+                    <span>一级行业</span>
+                    <span>二级技术</span>
+                    <span>三级岗位</span>
+                </div>
+                <label>面试方向</label>
+                <select id="directionLevel1" onchange="onDirectionLevel1Change()"></select>
+                <select id="directionLevel2" onchange="onDirectionLevel2Change()"></select>
+                <select id="directionLevel3"></select>
+                <button onclick="startInterview()">开始方向面试</button>
+            </div>
+
+            <div class="mode-card">
+                <h3>复习面试</h3>
+                <p class="muted">基于手动提问记录抽题，适合复盘错题、高频题和未掌握知识点。</p>
+                <button class="review" onclick="startReviewInterview()">开始复习面试</button>
+            </div>
+
+            <div class="quick-links">
+                <button class="secondary" onclick="location.href='history.html'">历史记录</button>
+                <button class="secondary" onclick="location.href='manual-questions.html'">手动题库</button>
+                <button class="secondary" onclick="location.href='admin-directions.html'">方向管理</button>
+                <button class="secondary" onclick="loadHistory()">快速复盘</button>
             </div>
         </div>
     </section>
@@ -273,6 +592,7 @@
         <textarea id="userAnswer" placeholder="语音识别结果会出现在这里，也可以手动修改。"></textarea>
         <button onclick="submitAnswer()">确认文字并提交评分</button>
         <button class="secondary" onclick="clearAnswer()">重新输入</button>
+        <button class="danger" onclick="cancelInterview()">取消当前面试</button>
     </section>
 
     <section id="result" class="card hidden">
@@ -288,6 +608,7 @@
         <p id="suggestion"></p>
         <button id="nextBtn" onclick="nextQuestion()">下一题</button>
         <button id="summaryBtn" class="hidden" onclick="loadSummary()">查看总结</button>
+        <button id="cancelResultBtn" class="danger" onclick="cancelInterview()">取消当前面试</button>
     </section>
 
     <section id="summary" class="card hidden">
@@ -329,9 +650,11 @@
     let recognition = null;
     let recognizing = false;
     let currentHistoryInterviewId = null;
+    let directionTree = [];
 
     window.addEventListener("DOMContentLoaded", () => {
         updateSpeechSupportTip();
+        loadDirectionTree();
         resumeFromUrl();
     });
 
@@ -355,11 +678,76 @@
 
     async function startInterview() {
         try {
-            const positionType = document.getElementById("positionType").value;
+            const directionId = getSelectedDirectionId();
+            if (!directionId) {
+                alert("请先选择面试方向");
+                return;
+            }
             const data = await request("/api/interview/start", {
                 method: "POST",
-                body: JSON.stringify({positionType})
+                body: JSON.stringify({directionId})
             });
+            interviewId = data.interviewId;
+            renderQuestion(data);
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    async function loadDirectionTree() {
+        try {
+            directionTree = await request("/api/interview-directions/tree");
+            renderDirectionLevel1();
+        } catch (error) {
+            directionTree = [];
+            document.getElementById("directionLevel1").innerHTML = `<option value="">方向加载失败</option>`;
+            document.getElementById("directionLevel2").innerHTML = `<option value="">请刷新重试</option>`;
+            document.getElementById("directionLevel3").innerHTML = `<option value="">请刷新重试</option>`;
+        }
+    }
+
+    function renderDirectionLevel1() {
+        fillDirectionSelect("directionLevel1", directionTree, "请选择一级方向");
+        onDirectionLevel1Change();
+    }
+
+    function onDirectionLevel1Change() {
+        const level1 = findDirection(directionTree, document.getElementById("directionLevel1").value);
+        fillDirectionSelect("directionLevel2", level1 ? level1.children : [], "请选择二级方向");
+        onDirectionLevel2Change();
+    }
+
+    function onDirectionLevel2Change() {
+        const level1 = findDirection(directionTree, document.getElementById("directionLevel1").value);
+        const level2 = findDirection(level1 ? level1.children : [], document.getElementById("directionLevel2").value);
+        fillDirectionSelect("directionLevel3", level2 ? level2.children : [], "请选择三级方向");
+    }
+
+    function fillDirectionSelect(id, directions, placeholder) {
+        const select = document.getElementById(id);
+        select.innerHTML = `<option value="">${placeholder}</option>`;
+        directions.forEach(direction => {
+            const option = document.createElement("option");
+            option.value = direction.id;
+            option.textContent = direction.name;
+            select.appendChild(option);
+        });
+        select.disabled = directions.length === 0;
+    }
+
+    function findDirection(directions, id) {
+        return directions.find(direction => String(direction.id) === String(id));
+    }
+
+    function getSelectedDirectionId() {
+        return document.getElementById("directionLevel3").value
+            || document.getElementById("directionLevel2").value
+            || document.getElementById("directionLevel1").value;
+    }
+
+    async function startReviewInterview() {
+        try {
+            const data = await request("/api/interview/review/start", {method: "POST"});
             interviewId = data.interviewId;
             renderQuestion(data);
         } catch (error) {
@@ -388,6 +776,7 @@
         document.getElementById("questionType").innerText = `题型：${formatQuestionType(question.questionType)}`;
         document.getElementById("questionContent").innerText = question.questionContent;
         document.getElementById("userAnswer").value = "";
+        document.getElementById("cancelResultBtn").classList.remove("hidden");
         show("interview");
     }
 
@@ -512,6 +901,7 @@
             document.getElementById("suggestion").innerText = data.suggestion;
             document.getElementById("nextBtn").classList.toggle("hidden", data.finished);
             document.getElementById("summaryBtn").classList.toggle("hidden", !data.finished);
+            document.getElementById("cancelResultBtn").classList.toggle("hidden", data.finished);
             show("result");
         } catch (error) {
             alert(error.message);
@@ -522,6 +912,34 @@
         try {
             const data = await request(`/api/interview/${interviewId}/next`, {method: "POST"});
             renderQuestion(data);
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    async function cancelInterview() {
+        if (!interviewId) {
+            show("home");
+            return;
+        }
+        const confirmed = confirm("确认取消当前面试吗？取消后本次记录会标记为已取消，不能继续作答。");
+        if (!confirmed) {
+            return;
+        }
+        try {
+            if (recognizing) {
+                stopRecord();
+            }
+            const response = await fetch(`/api/interview/${interviewId}/cancel`, {method: "POST"});
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.message || "取消面试失败");
+            }
+            interviewId = null;
+            currentQuestion = null;
+            clearAnswer();
+            alert("当前面试已取消");
+            show("home");
         } catch (error) {
             alert(error.message);
         }
@@ -558,24 +976,36 @@
     async function loadHistory() {
         try {
             const data = await request("/api/interview/history");
+            const records = Array.isArray(data) ? data : (data.records || []);
             const list = document.getElementById("historyList");
             list.innerHTML = "";
-            if (!data.length) {
+            if (!records.length) {
                 list.innerHTML = `<p class="muted">暂无历史面试记录。</p>`;
             }
-            data.forEach(item => {
-                const div = document.createElement("div");
-                div.className = "history-item";
-                div.innerHTML = `
-                    <h3>${escapeHtml(item.positionType)}：${item.totalScore || 0} / 100</h3>
-                    <div class="history-meta">
-                        状态：${formatStatus(item.status)}<br>
-                        开始时间：${formatTime(item.createdAt)}<br>
-                        完成时间：${formatTime(item.finishedAt)}
+            groupHistoryByDirection(records).forEach(group => {
+                const groupDiv = document.createElement("div");
+                groupDiv.className = "history-direction-group";
+                groupDiv.innerHTML = `
+                    <div class="history-direction-head">
+                        <span>${escapeHtml(group.name)}</span>
+                        <span class="history-direction-count">${group.items.length} 条</span>
                     </div>
-                    <button onclick="loadHistoryDetail(${item.interviewId})">查看详情</button>
                 `;
-                list.appendChild(div);
+                group.items.forEach(item => {
+                    const div = document.createElement("div");
+                    div.className = "history-item";
+                    div.innerHTML = `
+                        <h3>${escapeHtml(formatPositionType(item.positionType))}：${item.totalScore || 0} / 100</h3>
+                        <div class="history-meta">
+                            状态：${formatStatus(item.status)}<br>
+                            开始时间：${formatTime(item.createdAt)}<br>
+                            完成时间：${formatTime(item.finishedAt)}
+                        </div>
+                        <button onclick="loadHistoryDetail(${item.interviewId})">查看详情</button>
+                    `;
+                    groupDiv.appendChild(div);
+                });
+                list.appendChild(groupDiv);
             });
             show("history");
         } catch (error) {
@@ -589,7 +1019,7 @@
             const data = await request(`/api/interview/history/${targetInterviewId}`);
             document.getElementById("historyTotalScore").innerText = data.totalScore || 0;
             document.getElementById("historyBaseInfo").innerText =
-                `${data.positionType} ｜ ${formatStatus(data.status)} ｜ ${formatTime(data.createdAt)}`;
+                `${formatPositionType(data.positionType)} ｜ ${formatStatus(data.status)} ｜ ${formatTime(data.createdAt)}`;
             document.getElementById("historyOverallComment").innerText = data.overallComment || "暂无整体评价";
             document.getElementById("historyImprovementAdvice").innerText = data.improvementAdvice || "暂无提升建议";
 
@@ -649,7 +1079,12 @@
     }
 
     function formatStatus(status) {
-        return status === "FINISHED" ? "已完成" : "进行中";
+        const mapping = {
+            FINISHED: "已完成",
+            CANCELLED: "已取消",
+            RUNNING: "进行中"
+        };
+        return mapping[status] || "进行中";
     }
 
     function formatQuestionType(type) {
@@ -658,9 +1093,39 @@
             CONCURRENCY: "JVM/并发八股",
             MIDDLEWARE: "数据库/缓存/中间件",
             PROJECT: "项目实战",
-            ARCHITECTURE: "架构设计"
+            ARCHITECTURE: "架构设计",
+            REVIEW: "复习题"
         };
         return mapping[type] || "未分类";
+    }
+
+    function formatPositionType(positionType) {
+        return positionType === "REVIEW" ? "复习（基于手动提问）" : positionType;
+    }
+
+    function groupHistoryByDirection(items) {
+        const groupMap = new Map();
+        items.forEach(item => {
+            const groupName = getDirectionGroupName(item.positionType);
+            if (!groupMap.has(groupName)) {
+                groupMap.set(groupName, []);
+            }
+            groupMap.get(groupName).push(item);
+        });
+        return Array.from(groupMap.entries()).map(([name, groupItems]) => ({
+            name,
+            items: groupItems
+        }));
+    }
+
+    function getDirectionGroupName(positionType) {
+        if (positionType === "REVIEW") {
+            return "复习面试";
+        }
+        const normalized = formatPositionType(positionType);
+        return normalized.includes("/")
+            ? normalized.split("/")[0].trim()
+            : normalized;
     }
 
     function formatTime(value) {

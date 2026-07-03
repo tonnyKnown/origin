@@ -28,7 +28,15 @@ public class InterviewController {
 
     @PostMapping("/start")
     public QuestionResponse start(@Valid @RequestBody StartInterviewRequest request) {
+        if (request.directionId() != null) {
+            return interviewService.startByDirection(request.directionId());
+        }
         return interviewService.start(request.positionType());
+    }
+
+    @PostMapping("/review/start")
+    public QuestionResponse startReview() {
+        return interviewService.startReview();
     }
 
     @PostMapping("/{interviewId}/answer")
@@ -45,6 +53,11 @@ public class InterviewController {
     @PostMapping("/{interviewId}/continue")
     public QuestionResponse continueInterview(@PathVariable Long interviewId) {
         return interviewService.continueInterview(interviewId);
+    }
+
+    @PostMapping("/{interviewId}/cancel")
+    public void cancelInterview(@PathVariable Long interviewId) {
+        interviewService.cancelInterview(interviewId);
     }
 
     @GetMapping("/{interviewId}/summary")
