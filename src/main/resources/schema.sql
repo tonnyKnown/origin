@@ -74,6 +74,76 @@ CREATE TABLE IF NOT EXISTS manual_question (
     INDEX idx_manual_question_level (understanding_level)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- 快速复盘试卷主表：保存生成试卷时使用的画像快照和整卷得分。
+CREATE TABLE IF NOT EXISTS quick_review_paper (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    user_profile TEXT NOT NULL,
+    weak_points TEXT NULL,
+    evidence_count INT NOT NULL DEFAULT 0,
+    question_count INT NOT NULL DEFAULT 0,
+    total_score INT NOT NULL DEFAULT 0,
+    status VARCHAR(20) NOT NULL DEFAULT 'RUNNING',
+    submitted_at DATETIME NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    INDEX idx_quick_review_paper_created_at (created_at),
+    INDEX idx_quick_review_paper_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 快速复盘题目表：保存每题答案、AI 批改结果，后续会反哺用户画像。
+CREATE TABLE IF NOT EXISTS quick_review_question (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    paper_id BIGINT NOT NULL,
+    question_index INT NOT NULL,
+    knowledge_point VARCHAR(200) NULL,
+    question_content TEXT NOT NULL,
+    blank_answer TEXT NULL,
+    reference_answer TEXT NULL,
+    explanation TEXT NULL,
+    user_answer TEXT NULL,
+    score INT NULL,
+    correct BOOLEAN NULL,
+    ai_comment TEXT NULL,
+    suggestion TEXT NULL,
+    answered_at DATETIME NULL,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    INDEX idx_quick_review_question_paper_id (paper_id),
+    UNIQUE KEY uk_quick_review_question_index (paper_id, question_index)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 当前生效用户画像：快速复盘出题只读取这里，不在页面加载时自动生成画像。
+CREATE TABLE IF NOT EXISTS user_profile (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    profile_summary TEXT NOT NULL,
+    weak_points TEXT NULL,
+    strength_points TEXT NULL,
+    learning_suggestions TEXT NULL,
+    evidence_count INT NOT NULL DEFAULT 0,
+    version INT NOT NULL DEFAULT 1,
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    INDEX idx_user_profile_status_updated_at (status, updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 用户画像版本表：保留每次用户主动更新画像时的证据快照和模型输出。
+CREATE TABLE IF NOT EXISTS user_profile_version (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    profile_id BIGINT NOT NULL,
+    version INT NOT NULL,
+    profile_summary TEXT NOT NULL,
+    weak_points TEXT NULL,
+    strength_points TEXT NULL,
+    learning_suggestions TEXT NULL,
+    evidence_snapshot MEDIUMTEXT NULL,
+    evidence_count INT NOT NULL DEFAULT 0,
+    model_name VARCHAR(100) NULL,
+    created_at DATETIME NOT NULL,
+    INDEX idx_user_profile_version_profile_id (profile_id),
+    INDEX idx_user_profile_version_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 ALTER TABLE interview_session ADD COLUMN overall_comment TEXT NULL;
 ALTER TABLE interview_session ADD COLUMN improvement_advice TEXT NULL;
 ALTER TABLE interview_session ADD COLUMN finished_at DATETIME NULL;

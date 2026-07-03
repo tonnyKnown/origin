@@ -5,16 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>手动提问记录</title>
     <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            background: linear-gradient(135deg, #f7f9fc 0%, #eef4ff 100%);
-            color: #1f2937;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        }
+        /* 手动题库页面特有样式 */
 
         .app {
             width: 100%;
@@ -22,166 +13,10 @@
             padding: 24px;
         }
 
-        .topbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-            margin-bottom: 18px;
-        }
-
-        .layout {
-            display: grid;
-            grid-template-columns: 420px minmax(0, 1fr);
-            gap: 18px;
-            align-items: stretch;
-            min-height: calc(100vh - 118px);
-        }
-
-        .card {
-            padding: 22px;
-            background: rgba(255, 255, 255, 0.94);
-            border: 1px solid rgba(226, 232, 240, 0.9);
-            border-radius: 22px;
-            box-shadow: 0 18px 45px rgba(83, 105, 145, 0.10);
-        }
-
         .layout > .card:last-child {
             display: flex;
             flex-direction: column;
             min-width: 0;
-        }
-
-        h1, h2, h3 {
-            margin: 0 0 12px;
-        }
-
-        p {
-            line-height: 1.7;
-        }
-
-        input, textarea, select {
-            width: 100%;
-            padding: 13px;
-            border: 1px solid #d9dfeb;
-            border-radius: 14px;
-            font-size: 16px;
-            background: #fff;
-        }
-
-        textarea {
-            min-height: 190px;
-            line-height: 1.6;
-            resize: vertical;
-        }
-
-        button {
-            min-width: 120px;
-            margin-top: 10px;
-            padding: 12px 14px;
-            border: 0;
-            border-radius: 12px;
-            background: #2563eb;
-            color: #fff;
-            font-size: 15px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        button.secondary {
-            background: #eef2ff;
-            color: #1e40af;
-        }
-
-        button:disabled {
-            background: #a9b4c7;
-            cursor: not-allowed;
-        }
-
-        .muted {
-            color: #68758f;
-            font-size: 14px;
-        }
-
-        .question-list {
-            display: grid;
-            gap: 12px;
-            flex: 1;
-            align-content: start;
-        }
-
-        .search-row {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) 180px auto auto;
-            gap: 10px;
-            align-items: start;
-            margin-bottom: 14px;
-        }
-
-        .search-row button {
-            margin-top: 0;
-        }
-
-        .pagination {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            margin-top: 14px;
-        }
-
-        .pagination-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .card-actions {
-            display: flex;
-            flex-shrink: 0;
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: flex-start;
-            padding-top: 12px;
-            border-top: 1px dashed #dbe3f0;
-        }
-
-        .card-actions button {
-            min-width: 92px;
-            margin-top: 0;
-        }
-
-        .tag-select {
-            min-width: 150px;
-            height: 43px;
-            padding: 9px 12px;
-            font-size: 14px;
-            flex: 0 0 170px;
-        }
-
-        .level-badge {
-            display: inline-flex;
-            align-items: center;
-            flex-shrink: 0;
-            margin-left: 0;
-            padding: 3px 9px;
-            border-radius: 999px;
-            font-size: 13px;
-            font-weight: 800;
-        }
-
-        .level-high {
-            background: #fee2e2;
-            color: #b91c1c;
-        }
-
-        .level-medium {
-            background: #fef3c7;
-            color: #b45309;
-        }
-
-        .level-low {
-            background: #dcfce7;
-            color: #15803d;
         }
 
         .question-card {
@@ -195,12 +30,6 @@
             gap: 12px;
         }
 
-        .question-card:hover {
-            border-color: #bfd2ff;
-            box-shadow: 0 10px 24px rgba(37, 99, 235, 0.08);
-            transform: translateY(-1px);
-        }
-
         .question-head {
             display: grid;
             grid-template-columns: 1fr;
@@ -209,13 +38,15 @@
 
         .question-text {
             margin: 0;
-            display: flex;
-            align-items: flex-start;
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            align-items: start;
             gap: 8px;
             font-size: 16px;
             font-weight: 600;
             line-height: 1.65;
             white-space: pre-wrap;
+            overflow-wrap: anywhere;
             word-break: break-word;
         }
 
@@ -226,7 +57,9 @@
 
         .question-content {
             min-width: 0;
-            flex: 1;
+            max-width: 100%;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
 
         .question-head .muted {
@@ -251,97 +84,9 @@
             display: none;
         }
 
-        .answer-section {
-            padding: 13px;
-            border-radius: 14px;
-            white-space: pre-wrap;
-        }
-
-        .answer-section + .answer-section {
-            margin-top: 12px;
-        }
-
-        .ai-section {
-            background: #eff6ff;
-            border: 1px solid #bfdbfe;
-        }
-
-        .remark-section {
-            background: #fff7ed;
-            border: 1px solid #fed7aa;
-        }
-
-        .self-test-section {
-            background: #ecfdf5;
-            border: 1px solid #bbf7d0;
-        }
-
-        .answer-title {
-            display: inline-block;
-            margin-bottom: 6px;
-            padding: 3px 9px;
-            border-radius: 999px;
-            font-size: 13px;
-            font-weight: 800;
-        }
-
-        .ai-section .answer-title {
-            background: #dbeafe;
-            color: #1d4ed8;
-        }
-
-        .remark-section .answer-title {
-            background: #ffedd5;
-            color: #c2410c;
-        }
-
-        .self-test-section .answer-title {
-            background: #dcfce7;
-            color: #15803d;
-        }
-
-        .score-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 62px;
-            margin-left: 8px;
-            padding: 3px 9px;
-            border-radius: 999px;
-            background: #16a34a;
-            color: #fff;
-            font-weight: 800;
-        }
-
-        .remark-editor,
-        .self-test-editor {
-            margin-top: 12px;
-            padding: 13px;
-            border-radius: 14px;
-            background: #f8fbff;
-            border: 1px solid #e5eaf3;
-        }
-
-        .remark-editor.hidden,
-        .self-test-editor.hidden {
-            display: none;
-        }
-
-        .remark-editor textarea,
-        .self-test-editor textarea {
-            min-height: 130px;
-        }
-
-        .remark-actions,
-        .self-test-actions {
+        .pagination-actions {
             display: flex;
             gap: 8px;
-        }
-
-        .empty {
-            padding: 40px;
-            text-align: center;
-            color: #68758f;
         }
 
         @media (max-width: 900px) {
@@ -357,7 +102,7 @@
                 align-items: stretch;
             }
 
-            .layout {
+            .layout-sidebar {
                 grid-template-columns: 1fr;
                 min-height: auto;
             }
@@ -379,6 +124,7 @@
             }
         }
     </style>
+    <link rel="stylesheet" href="common-theme.css">
 </head>
 <body>
 <main class="app">
@@ -390,15 +136,15 @@
         <button class="secondary" onclick="location.href='/'">返回首页</button>
     </div>
 
-    <div class="layout">
-        <section class="card">
+    <div class="layout-sidebar layout-sidebar-wide">
+        <section class="card panel">
             <h2>新增问题</h2>
             <p class="muted">先保存问题，再在右侧历史记录中生成 AI 简答。</p>
             <textarea id="questionContent" placeholder="请输入你的问题，例如：Redis 缓存击穿和缓存穿透有什么区别？"></textarea>
             <button onclick="saveQuestion()">保存问题</button>
         </section>
 
-        <section class="card">
+        <section class="card panel">
             <h2>历史记录</h2>
             <div class="search-row">
                 <input id="keywordInput" placeholder="按问题内容模糊搜索">
@@ -540,7 +286,7 @@
                         </select>
                         <button id="answerBtn-${item.id}" onclick="answerQuestion(event, ${item.id})">${item.aiAnswer ? "重新回答" : "AI简答"}</button>
                         <button class="secondary" onclick="showRemarkEditor(event, ${item.id})">${item.manualRemark ? "修改备注" : "备注"}</button>
-                        <button class="secondary" onclick="showSelfTestEditor(event, ${item.id})">考试_自测</button>
+                        <button class="secondary" onclick="showSelfTestEditor(event, ${item.id})">自测评分</button>
                     </div>
                 </div>
                 ${(item.aiAnswer || item.manualRemark || item.selfTestScore != null) ? `
@@ -559,7 +305,7 @@
                         ` : ""}
                         ${item.selfTestScore != null ? `
                             <div class="answer-section self-test-section">
-                                <span class="answer-title">考试_自测</span>
+                                <span class="answer-title">自测评分</span>
                                 <span class="score-badge">${item.selfTestScore} / 20</span><br>
                                 <b>我的答案：</b><br>${escapeHtml(item.selfTestAnswer)}<br><br>
                                 <b>点评：</b><br>${escapeHtml(item.selfTestComment)}<br><br>

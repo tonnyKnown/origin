@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快速复盘</title>
+    <style>
+        .review-dashboard {
+            display: grid;
+            grid-template-columns: 340px minmax(0, 1fr);
+            gap: 18px;
+            align-items: start;
+        }
+
+        .profile-card {
+            position: sticky;
+            top: 18px;
+            padding: 22px;
+        }
+
+        .profile-text {
+            margin: 14px 0;
+            padding: 14px;
+            border: 1px solid rgba(191, 219, 254, 0.58);
+            border-radius: 16px;
+            background: linear-gradient(180deg, #eff6ff, #f8fbff);
+            color: #172554;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .weak-list,
+        .score-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .weak-tag {
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #eef2ff;
+            color: #1e40af;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .summary-pill {
+            padding: 8px 11px;
+            border-radius: 999px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: #334155;
+            font-weight: 800;
+        }
+
+        .summary-pill strong {
+            color: #1d4ed8;
+        }
+
+        .history-list {
+            display: grid;
+            gap: 10px;
+            margin-top: 14px;
+            max-height: 360px;
+            overflow: auto;
+            padding-right: 4px;
+        }
+
+        .history-item {
+            width: 100%;
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.78);
+            color: #172033;
+            cursor: pointer;
+        }
+
+        .history-score {
+            color: #1d4ed8;
+            font-weight: 900;
+        }
+
+        .history-meta {
+            margin-top: 4px;
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .drill-list {
+            display: grid;
+            gap: 14px;
+        }
+
+        .drill-card {
+            padding: 18px;
+            border: 1px solid #e5eaf3;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.92);
+            box-shadow: 0 12px 30px rgba(58, 83, 142, 0.10);
+            overflow: hidden;
+        }
+
+        .drill-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .drill-index {
+            color: #1d4ed8;
+            font-weight: 900;
+        }
+
+        .knowledge-point {
+            padding: 4px 9px;
+            border-radius: 999px;
+            background: #ecfeff;
+            color: #0e7490;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .blank-question {
+            margin: 10px 0 14px;
+            padding: 14px;
+            border-radius: 14px;
+            background: #f8fafc;
+            color: #172033;
+            font-size: 17px;
+            font-weight: 700;
+            line-height: 1.7;
+            overflow-wrap: anywhere;
+        }
+
+        .feedback {
+            margin-top: 12px;
+            padding: 13px;
+            border-radius: 14px;
+            background: #f8fbff;
+            border: 1px solid #dbeafe;
+            line-height: 1.7;
+            overflow-wrap: anywhere;
+        }
+
+        .feedback.correct {
+            background: #ecfdf5;
+            border-color: #bbf7d0;
+        }
+
+        .feedback.wrong {
+            background: #fff7ed;
+            border-color: #fed7aa;
+        }
+
+        .score-pill {
+            display: inline-flex;
+            min-width: 74px;
+            padding: 5px 10px;
+            border-radius: 999px;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-weight: 900;
+        }
+
+        .reference {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed #cbd5e1;
+        }
+
+        .paper-actions {
+            position: sticky;
+            bottom: 0;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 16px;
+            padding: 14px;
+            border: 1px solid rgba(191, 219, 254, 0.72);
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 -10px 30px rgba(58, 83, 142, 0.10);
+        }
+
+        .empty-box {
+            padding: 36px;
+            text-align: center;
+            color: #64748b;
+        }
+
+        @media (max-width: 900px) {
+            .review-dashboard {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-card,
+            .paper-actions {
+                position: static;
+            }
+
+            .paper-actions {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .paper-actions button {
+                width: 100%;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="common-theme.css">
+</head>
+<body>
+<main class="app">
+    <section class="page-header">
+        <div>
+            <h1>快速复盘</h1>
+            <p class="muted">基于首页维护的用户画像生成填空题试卷，整卷提交后由大模型统一批改。</p>
+        </div>
+        <div class="header-actions">
+            <button class="ghost" onclick="location.href='index.html'">回首页更新画像</button>
+            <button class="ghost" onclick="generatePaper()">基于当前画像生成试卷</button>
+            <button class="ghost" onclick="loadHistory()">刷新历史</button>
+        </div>
+    </section>
+
+    <section class="review-dashboard">
+        <aside class="card profile-card">
+            <h2>当前用户画像</h2>
+            <p class="muted">画像需要在首页手动点击“更新用户画像”生成，不会在本页自动维护。</p>
+            <div id="profile" class="profile-text">正在读取当前画像...</div>
+            <h3>薄弱点</h3>
+            <div id="weakPoints" class="weak-list"></div>
+            <h3 style="margin-top: 18px;">学习建议</h3>
+            <div id="suggestions" class="weak-list"></div>
+            <p id="profileMeta" class="muted" style="margin-top: 14px;"></p>
+
+            <div class="score-summary hidden" id="scoreSummary"></div>
+
+            <h3 style="margin-top: 22px;">历史试卷</h3>
+            <p class="muted">点击可查看历史作答、AI 评分和解析。</p>
+            <div id="historyList" class="history-list">
+                <div class="empty-box">正在加载历史...</div>
+            </div>
+        </aside>
+
+        <section class="card">
+            <div class="card-head">
+                <div>
+                    <h2>填空题训练</h2>
+                    <p class="muted">先在首页更新画像，再基于当前画像生成试卷。</p>
+                </div>
+            </div>
+            <div id="questionList" class="drill-list">
+                <div class="empty-box">点击“基于当前画像生成试卷”开始训练。</div>
+            </div>
+            <div class="paper-actions">
+                <span id="paperStatus" class="muted">等待生成试卷。</span>
+                <button id="submitPaperBtn" onclick="submitPaper()" disabled>整卷提交并评分</button>
+            </div>
+        </section>
+    </section>
+</main>
+
+<script>
+    let currentPaperId = null;
+    let quickReviewQuestions = [];
+    let submitted = false;
+    let hasProfile = false;
+
+    window.addEventListener("DOMContentLoaded", () => {
+        loadCurrentProfile();
+        loadHistory();
+    });
+
+    async function request(url, options = {}) {
+        const response = await fetch(url, {
+            headers: {"Content-Type": "application/json"},
+            ...options
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data.message || "请求失败");
+        }
+        return data;
+    }
+
+    async function loadCurrentProfile() {
+        // 页面加载只读取当前画像，不在这里触发画像刷新。
+        try {
+            const profile = await request("/api/user-profile/current");
+            hasProfile = profile.exists;
+            renderProfile(profile);
+            if (!profile.exists) {
+                document.getElementById("paperStatus").textContent = "暂无画像，请先回首页更新用户画像。";
+            }
+        } catch (error) {
+            hasProfile = false;
+            document.getElementById("profile").textContent = error.message;
+        }
+    }
+
+    function renderProfile(profile) {
+        document.getElementById("profile").textContent = profile.profileSummary || "暂无用户画像。";
+        document.getElementById("weakPoints").innerHTML = renderTags(profile.weakPoints || []);
+        document.getElementById("suggestions").innerHTML = renderTags(profile.learningSuggestions || []);
+        document.getElementById("profileMeta").textContent = profile.exists
+            ? `画像版本 ${profile.version}，参考 ${profile.evidenceCount || 0} 条证据，更新时间：${formatTime(profile.updatedAt)}`
+            : "暂无画像。请回首页点击“更新用户画像”。";
+    }
+
+    async function generatePaper() {
+        // 生成试卷依赖已经维护好的画像，避免把本次出题和画像更新混在一起。
+        if (!hasProfile) {
+            alert("暂无用户画像，请先回首页点击“更新用户画像”。");
+            return;
+        }
+
+        currentPaperId = null;
+        quickReviewQuestions = [];
+        submitted = false;
+        document.getElementById("scoreSummary").classList.add("hidden");
+        document.getElementById("submitPaperBtn").disabled = true;
+        document.getElementById("paperStatus").textContent = "正在基于当前画像生成试卷...";
+        document.getElementById("questionList").innerHTML = `<div class="empty-box">正在生成填空题...</div>`;
+
+        try {
+            const data = await request("/api/quick-review/start", {method: "POST"});
+            currentPaperId = data.paperId;
+            quickReviewQuestions = data.questions || [];
+            document.getElementById("paperStatus").textContent = `试卷 #${currentPaperId} 已生成，共 ${quickReviewQuestions.length} 题。`;
+            document.getElementById("submitPaperBtn").disabled = false;
+            renderQuestions();
+            loadHistory();
+        } catch (error) {
+            document.getElementById("paperStatus").textContent = "试卷生成失败。";
+            document.getElementById("questionList").innerHTML = `<div class="empty-box">${escapeHtml(error.message)}</div>`;
+        }
+    }
+
+    function renderQuestions(results = null) {
+        const questionList = document.getElementById("questionList");
+        const source = results || quickReviewQuestions;
+        if (!source.length) {
+            questionList.innerHTML = `<div class="empty-box">暂无题目。</div>`;
+            return;
+        }
+
+        questionList.innerHTML = source.map((question, index) => {
+            const readonly = submitted || results ? "readonly" : "";
+            const answer = question.userAnswer || "";
+            const feedback = question.score == null ? "" : renderFeedback(question);
+            return `
+                <article class="drill-card">
+                    <div class="drill-head">
+                        <div class="drill-index">第 ${question.questionIndex || index + 1} 题</div>
+                        <span class="knowledge-point">${escapeHtml(question.knowledgePoint || "综合复盘")}</span>
+                    </div>
+                    <div class="blank-question">${escapeHtml(question.questionContent)}</div>
+                    <input id="answer-${index}" value="${escapeAttribute(answer)}" ${readonly} placeholder="填写空白处答案，例如：undo_log">
+                    ${feedback}
+                </article>
+            `;
+        }).join("");
+    }
+
+    async function submitPaper() {
+        // 整卷提交一次性传回所有答案，由后端调用大模型逐题语义评分。
+        if (!currentPaperId || submitted) {
+            return;
+        }
+
+        const answers = quickReviewQuestions.map((question, index) => ({
+            questionIndex: question.questionIndex || index + 1,
+            userAnswer: document.getElementById(`answer-${index}`)?.value?.trim() || ""
+        }));
+
+        const emptyCount = answers.filter(item => !item.userAnswer).length;
+        if (emptyCount > 0 && !confirm(`还有 ${emptyCount} 道题未作答，未作答题会按 0 分处理。确认提交吗？`)) {
+            return;
+        }
+
+        document.getElementById("submitPaperBtn").disabled = true;
+        document.getElementById("paperStatus").textContent = "大模型正在批改整张试卷...";
+
+        try {
+            const result = await request(`/api/quick-review/${currentPaperId}/submit`, {
+                method: "POST",
+                body: JSON.stringify({answers})
+            });
+            submitted = true;
+            quickReviewQuestions = result.questions || [];
+            renderQuestions(quickReviewQuestions);
+            renderScoreSummary(result);
+            document.getElementById("paperStatus").textContent = `试卷 #${result.paperId} 已提交。`;
+            loadHistory();
+        } catch (error) {
+            document.getElementById("submitPaperBtn").disabled = false;
+            document.getElementById("paperStatus").textContent = error.message;
+        }
+    }
+
+    function renderFeedback(question) {
+        const correctClass = question.correct ? "correct" : "wrong";
+        return `
+            <div class="feedback ${correctClass}">
+                <div><span class="score-pill">${question.score || 0} / 20</span> ${question.correct ? "回答命中" : "继续强化"}</div>
+                <p><b>点评：</b>${escapeHtml(question.comment || "")}</p>
+                <p><b>建议：</b>${escapeHtml(question.suggestion || "")}</p>
+                <div class="reference">
+                    <p><b>标准答案：</b>${escapeHtml(question.blankAnswer || question.referenceAnswer || "")}</p>
+                    <p><b>解析：</b>${escapeHtml(question.explanation || question.referenceAnswer || "")}</p>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderScoreSummary(result) {
+        const scoreSummary = document.getElementById("scoreSummary");
+        scoreSummary.classList.remove("hidden");
+        scoreSummary.innerHTML = `
+            <span class="summary-pill">总分 <strong>${result.totalScore}</strong> / ${result.fullScore}</span>
+            <span class="summary-pill">命中 <strong>${result.correctCount}</strong> / ${result.questionCount}</span>
+            <span class="summary-pill">正确率 <strong>${Math.round((result.correctCount || 0) / Math.max(result.questionCount || 1, 1) * 100)}%</strong></span>
+        `;
+    }
+
+    async function loadHistory() {
+        const historyList = document.getElementById("historyList");
+        try {
+            const papers = await request("/api/quick-review/history?page=1&size=20");
+            if (!papers.length) {
+                historyList.innerHTML = `<div class="empty-box">暂无历史试卷。</div>`;
+                return;
+            }
+            historyList.innerHTML = papers.map(paper => `
+                <button class="history-item" onclick="loadHistoryDetail(${paper.paperId})">
+                    <div><span class="history-score">${paper.totalScore || 0} / ${paper.fullScore || 0}</span> · ${escapeHtml(statusText(paper.status))}</div>
+                    <div class="history-meta">${formatTime(paper.submittedAt || paper.createdAt)} · ${paper.questionCount || 0} 题</div>
+                </button>
+            `).join("");
+        } catch (error) {
+            historyList.innerHTML = `<div class="empty-box">${escapeHtml(error.message)}</div>`;
+        }
+    }
+
+    async function loadHistoryDetail(paperId) {
+        try {
+            const detail = await request(`/api/quick-review/history/${paperId}`);
+            currentPaperId = detail.paperId;
+            submitted = detail.status === "SUBMITTED";
+            quickReviewQuestions = detail.questions || [];
+            renderProfile({
+                exists: true,
+                profileSummary: detail.userProfile,
+                weakPoints: detail.weakPoints || [],
+                learningSuggestions: [],
+                version: "-",
+                evidenceCount: detail.evidenceCount,
+                updatedAt: detail.createdAt
+            });
+            renderQuestions(quickReviewQuestions);
+            renderScoreSummary(detail);
+            document.getElementById("paperStatus").textContent = submitted ? `正在查看历史试卷 #${paperId}` : `试卷 #${paperId} 尚未提交。`;
+            document.getElementById("submitPaperBtn").disabled = submitted;
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    function renderTags(items) {
+        if (!items.length) {
+            return `<span class="muted">暂无</span>`;
+        }
+        return items.map(item => `<span class="weak-tag">${escapeHtml(item)}</span>`).join("");
+    }
+
+    function statusText(status) {
+        return status === "SUBMITTED" ? "已提交" : "未提交";
+    }
+
+    function formatTime(value) {
+        if (!value) {
+            return "-";
+        }
+        return String(value).replace("T", " ").slice(0, 19);
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function escapeAttribute(value) {
+        return escapeHtml(value).replace(/`/g, "&#096;");
+    }
+</script>
+</body>
+</html>

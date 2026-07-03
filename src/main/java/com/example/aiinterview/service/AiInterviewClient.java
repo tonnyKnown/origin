@@ -2,23 +2,32 @@ package com.example.aiinterview.service;
 
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
 public class AiInterviewClient {
 
+    private static final Logger log = LoggerFactory.getLogger(AiInterviewClient.class);
+
     private final ChatLanguageModel chatModel;
+
+    private final String modelName;
 
     public AiInterviewClient(
             @Value("${ai.deepseek.api-key:}") String apiKey,
             @Value("${ai.deepseek.base-url:https://api.deepseek.com/v1}") String baseUrl,
             @Value("${ai.deepseek.model-name:deepseek-chat}") String modelName) {
+        this.modelName = modelName;
         if (StringUtils.hasText(apiKey)) {
             this.chatModel = OpenAiChatModel.builder()
                     .apiKey(apiKey)
@@ -26,9 +35,19 @@ public class AiInterviewClient {
                     .modelName(modelName)
                     .timeout(Duration.ofSeconds(60))
                     .build();
+            log.info("DeepSeek chat model enabled. model={}, baseUrl={}", modelName, baseUrl);
         } else {
             this.chatModel = null;
+            log.warn("DeepSeek API key is not configured. Set DEEPSEEK_API_KEY in environment variables or project .env.");
         }
+    }
+
+    public boolean isAvailable() {
+        return chatModel != null;
+    }
+
+    public String modelName() {
+        return modelName;
     }
 
     public GeneratedQuestion generateQuestion(String positionType, int questionIndex, String questionType, String askedQuestions) {
@@ -185,6 +204,283 @@ public class AiInterviewClient {
         );
     }
 
+    public UserProfileResult generateUserProfile(String evidenceText) {
+        if (chatModel == null) {
+            throw new IllegalStateException("请先配置大模型 API Key，再更新用户画像。");
+        }
+
+        // 画像是后续出题的核心输入，因此要求模型输出固定 ASCII 标签，降低解析不稳定性。
+        String prompt = """
+                你是技术学习画像分析师。请只根据下面的学习证据生成用户画像，不要编造不存在的经历。
+                输出必须使用 ASCII 标签，便于系统解析；不要输出 Markdown，不要输出多余内容。
+
+                要求：
+                1. PROFILE 控制在 300 字以内，说明当前能力状态、主要短板和训练优先级。
+                2. WEAK 输出 3 到 8 个薄弱点，用英文分号 ; 分隔。
+                3. STRENGTH 输出 1 到 5 个优势点，没有明确证据可写“暂无明确优势证据”。
+                4. SUGGESTION 输出 3 到 6 条学习建议，用英文分号 ; 分隔。
+
+                学习证据：
+                %s
+
+                输出格式：
+                PROFILE: ...
+                WEAK: ...
+                STRENGTH: ...
+                SUGGESTION: ...
+                """.formatted(evidenceText);
+
+        String output = chatModel.generate(prompt);
+        return new UserProfileResult(
+                extractAscii(output, "PROFILE:", "WEAK:", "暂未形成稳定画像，请先完成面试、手动题库自测或快速复盘。"),
+                splitFocus(extractAscii(output, "WEAK:", "STRENGTH:", "")),
+                splitFocus(extractAscii(output, "STRENGTH:", "SUGGESTION:", "")),
+                splitFocus(extractAsciiTail(output, "SUGGESTION:", ""))
+        );
+    }
+
+    public QuickReviewResult generateQuickReviewFromProfile(String profileSummary,
+                                                            List<String> weakPoints,
+                                                            List<String> learningSuggestions,
+                                                            int questionCount) {
+        if (chatModel == null) {
+            throw new IllegalStateException("请先配置大模型 API Key，再基于用户画像生成复盘试卷。");
+        }
+
+        // 这里基于已有画像出题，不允许模型重新改写画像，保证“画像维护”和“生成试卷”职责分离。
+        String prompt = """
+                你是技术复盘教练。请基于已经维护好的用户画像生成填空题试卷。
+                目标是通过题海式练习加深理解，不是重新生成用户画像。
+                要求：
+                1. 生成 %d 道填空题，每题只考一个关键知识点。
+                2. 填空题必须有明确空位，用 ____ 表示。
+                3. 标准答案要短，适合学生填写。
+                4. 解析要说明为什么这个空这样填，帮助加深理解。
+                5. 严格使用 ASCII 标签输出，不要输出 Markdown，不要输出多余内容。
+
+                当前用户画像：
+                %s
+
+                薄弱点：
+                %s
+
+                学习建议：
+                %s
+
+                输出格式：
+                PROFILE: 复用当前画像，不要改写画像
+                FOCUS: 薄弱点; 薄弱点; 薄弱点
+                ITEM 1
+                POINT: ...
+                QUESTION: ...
+                ANSWER: ...
+                REFERENCE: ...
+                EXPLANATION: ...
+                ITEM 2
+                POINT: ...
+                QUESTION: ...
+                ANSWER: ...
+                REFERENCE: ...
+                EXPLANATION: ...
+                """.formatted(
+                questionCount,
+                profileSummary,
+                String.join("; ", weakPoints),
+                String.join("; ", learningSuggestions)
+        );
+
+        String output = chatModel.generate(prompt);
+        List<QuickReviewQuestion> questions = parseQuickReviewQuestions(output, questionCount);
+        if (questions.isEmpty()) {
+            // 正式画像试卷不使用本地兜底题，避免用户误以为题目来自当前画像。
+            throw new IllegalStateException("大模型没有返回有效的填空题，请重新生成试卷。");
+        }
+        List<String> focus = splitFocus(extractAscii(output, "FOCUS:", "ITEM 1", String.join("; ", weakPoints)));
+        return new QuickReviewResult(profileSummary, focus.isEmpty() ? weakPoints : focus, questions);
+    }
+
+    public QuickReviewResult generateQuickReview(String evidenceText, int questionCount) {
+        if (chatModel == null) {
+            return mockQuickReview(questionCount);
+        }
+
+        String prompt = """
+                你是一个技术面试复盘教练。请根据用户的历史弱点证据，生成用户画像，并围绕薄弱点生成填空题。
+                目标是通过题海式练习加深理解，不是重新做开放问答。
+
+                要求：
+                1. 先总结用户画像，指出知识短板、易混概念、练习优先级。
+                2. 输出 3 到 6 个薄弱点，用分号分隔。
+                3. 生成 %d 道填空题，每题只考一个关键知识点。
+                4. 填空题要有明确空位，用 ____ 表示。
+                5. 标准答案要短，适合学生填写。
+                6. 解析要说明为什么这个空这样填，帮助加深理解。
+                7. 严格使用下面的 ASCII 标签输出，不要输出 Markdown，不要输出多余内容。
+
+                历史弱点证据：
+                %s
+
+                输出格式：
+                PROFILE: ...
+                FOCUS: 薄弱点1; 薄弱点2; 薄弱点3
+                ITEM 1
+                POINT: ...
+                QUESTION: ...
+                ANSWER: ...
+                REFERENCE: ...
+                EXPLANATION: ...
+                ITEM 2
+                POINT: ...
+                QUESTION: ...
+                ANSWER: ...
+                REFERENCE: ...
+                EXPLANATION: ...
+                """.formatted(questionCount, evidenceText);
+
+        String output = chatModel.generate(prompt);
+        String profile = extractAscii(output, "PROFILE:", "FOCUS:", "用户需要围绕高频错题做填空强化。");
+        String focusText = extractAscii(output, "FOCUS:", "ITEM 1", "");
+        List<String> weakPoints = splitFocus(focusText);
+        List<QuickReviewQuestion> questions = parseQuickReviewQuestions(output, questionCount);
+        if (questions.isEmpty()) {
+            return mockQuickReview(questionCount);
+        }
+        return new QuickReviewResult(profile, weakPoints, questions);
+    }
+
+    public QuickReviewScore scoreQuickReviewAnswer(String questionContent, String referenceAnswer, String userAnswer) {
+        if (chatModel == null) {
+            boolean correct = referenceAnswer != null
+                    && userAnswer != null
+                    && referenceAnswer.trim().equalsIgnoreCase(userAnswer.trim());
+            int score = correct ? 20 : Math.max(6, Math.min(16, userAnswer == null ? 0 : userAnswer.trim().length() * 2));
+            return new QuickReviewScore(
+                    score,
+                    correct,
+                    correct ? "回答命中标准答案。" : "回答与标准答案还有差距，需要回到核心概念重新理解。",
+                    "建议先记住标准答案，再用自己的话解释它为什么成立。"
+            );
+        }
+
+        String prompt = """
+                你是技术复盘教练。请批改一道填空题，判断用户答案是否命中核心含义。
+                满分 20 分。答案允许同义表达，但必须覆盖关键概念。
+                严格使用下面 ASCII 标签输出，不要输出多余内容。
+
+                QUESTION:
+                %s
+
+                REFERENCE:
+                %s
+
+                USER_ANSWER:
+                %s
+
+                输出格式：
+                SCORE: 整数
+                CORRECT: true 或 false
+                COMMENT: ...
+                SUGGESTION: ...
+                """.formatted(questionContent, referenceAnswer, userAnswer);
+
+        String output = chatModel.generate(prompt);
+        int score = extractAsciiScore(output);
+        boolean correct = extractAscii(output, "CORRECT:", "COMMENT:", "false").toLowerCase().contains("true");
+        return new QuickReviewScore(
+                score,
+                correct,
+                extractAscii(output, "COMMENT:", "SUGGESTION:", "已完成批改。"),
+                extractAsciiTail(output, "SUGGESTION:", "建议继续围绕该知识点做相似填空题。")
+        );
+    }
+
+    private QuickReviewResult mockQuickReview(int questionCount) {
+        List<String> weakPoints = List.of("分布式事务模式", "缓存异常场景", "JVM 排查链路", "消息可靠性", "数据库索引优化");
+        List<QuickReviewQuestion> questions = new ArrayList<>();
+        String[][] samples = {
+                {"分布式事务", "AT 模式的一阶段会先执行业务 SQL，并记录 ____ 用于二阶段回滚。", "undo_log", "AT 模式通过 undo_log 保存回滚前镜像和回滚后镜像。", "undo_log 是 AT 能自动回滚的关键。"},
+                {"TCC", "TCC 的三个阶段分别是 Try、Confirm 和 ____。", "Cancel", "TCC 通过 Try 预留资源，Confirm 确认提交，Cancel 取消释放资源。", "Cancel 是失败补偿路径。"},
+                {"缓存穿透", "缓存穿透通常指查询一个缓存和数据库都不存在的数据，可以用布隆过滤器或缓存 ____ 缓解。", "空值", "不存在的数据短暂缓存空值，可以避免请求持续打到数据库。", "空值缓存要设置较短过期时间。"},
+                {"缓存击穿", "热点 Key 过期导致大量请求同时打到数据库，这类问题叫缓存 ____。", "击穿", "缓存击穿的核心是单个热点 Key 失效。", "它和雪崩的区别是影响范围更集中。"},
+                {"JVM", "排查 Full GC 频繁时，通常先看 GC 日志、堆内存占用和对象 ____。", "分布", "对象分布能帮助判断哪些对象占用内存以及是否存在泄漏。", "排查链路要从现象到证据。"},
+                {"消息可靠性", "MQ 保证可靠投递通常要关注生产者确认、Broker 持久化和消费者 ____。", "幂等", "消费者幂等可以避免重复消息造成业务副作用。", "可靠性不是只看发送成功。"},
+                {"MySQL 索引", "联合索引使用时要遵循最左 ____ 原则。", "前缀", "最左前缀原则决定了联合索引能否被有效利用。", "查询条件顺序和范围查询都会影响索引使用。"},
+                {"事务隔离", "MySQL InnoDB 默认隔离级别是 ____。", "可重复读", "InnoDB 默认 REPEATABLE READ，并通过 MVCC 和锁机制处理一致性。", "这是事务题的高频基础点。"},
+                {"AOP", "Spring AOP 默认主要基于动态代理，接口优先使用 ____ 代理。", "JDK", "有接口时 Spring AOP 通常使用 JDK 动态代理。", "无接口时通常使用 CGLIB。"},
+                {"线程池", "线程池拒绝策略会在线程数达到上限且 ____ 已满时触发。", "队列", "线程池无法继续接收任务时才触发拒绝策略。", "要同时看核心线程、最大线程和队列。"}
+        };
+        for (int i = 0; i < Math.min(questionCount, samples.length); i++) {
+            String[] sample = samples[i];
+            questions.add(new QuickReviewQuestion(i + 1, sample[0], sample[1], sample[2], sample[3], sample[4]));
+        }
+        return new QuickReviewResult(
+                "当前画像显示：用户适合用填空题强化概念边界，优先补齐分布式事务、缓存、JVM、消息可靠性和数据库索引等高频薄弱点。",
+                weakPoints,
+                questions
+        );
+    }
+
+    private List<QuickReviewQuestion> parseQuickReviewQuestions(String output, int questionCount) {
+        List<QuickReviewQuestion> questions = new ArrayList<>();
+        // 匹配模型按 ITEM/POINT/QUESTION/ANSWER/REFERENCE/EXPLANATION 输出的结构化题目块。
+        Pattern pattern = Pattern.compile(
+                "ITEM\\s+(\\d+)\\s*\\RPOINT:\\s*(.*?)\\s*\\RQUESTION:\\s*(.*?)\\s*\\RANSWER:\\s*(.*?)\\s*\\RREFERENCE:\\s*(.*?)\\s*\\REXPLANATION:\\s*(.*?)(?=\\RITEM\\s+\\d+|\\z)",
+                Pattern.DOTALL
+        );
+        Matcher matcher = pattern.matcher(output);
+        while (matcher.find() && questions.size() < questionCount) {
+            questions.add(new QuickReviewQuestion(
+                    questions.size() + 1,
+                    matcher.group(2).trim(),
+                    matcher.group(3).trim(),
+                    matcher.group(4).trim(),
+                    matcher.group(5).trim(),
+                    matcher.group(6).trim()
+            ));
+        }
+        return questions;
+    }
+
+    private List<String> splitFocus(String focusText) {
+        if (!StringUtils.hasText(focusText)) {
+            return List.of();
+        }
+        String[] parts = focusText.split("[;；、,，\\n]");
+        List<String> result = new ArrayList<>();
+        for (String part : parts) {
+            String item = part.trim();
+            if (!item.isBlank()) {
+                result.add(item);
+            }
+        }
+        return result;
+    }
+
+    private String extractAscii(String text, String start, String end, String fallback) {
+        int startIndex = text.indexOf(start);
+        int endIndex = text.indexOf(end, Math.max(startIndex, 0));
+        if (startIndex >= 0 && endIndex > startIndex) {
+            return text.substring(startIndex + start.length(), endIndex).trim();
+        }
+        return fallback;
+    }
+
+    private String extractAsciiTail(String text, String start, String fallback) {
+        int startIndex = text.indexOf(start);
+        if (startIndex >= 0) {
+            return text.substring(startIndex + start.length()).trim();
+        }
+        return fallback;
+    }
+
+    private int extractAsciiScore(String text) {
+        Matcher matcher = Pattern.compile("SCORE:\\s*(\\d{1,2})").matcher(text);
+        if (matcher.find()) {
+            return Math.min(20, Math.max(0, Integer.parseInt(matcher.group(1))));
+        }
+        return 12;
+    }
+
     private GeneratedQuestion mockQuestion(String positionType, int index, String questionType) {
         if (StringUtils.hasText(questionType)) {
             String question = switch (questionType) {
@@ -250,5 +546,25 @@ public class AiInterviewClient {
     }
 
     public record ScoreResult(Integer score, String answerSummary, String aiComment, String suggestion) {
+    }
+
+    public record QuickReviewResult(String userProfile, List<String> weakPoints, List<QuickReviewQuestion> questions) {
+    }
+
+    public record QuickReviewQuestion(Integer questionIndex,
+                                      String knowledgePoint,
+                                      String questionContent,
+                                      String blankAnswer,
+                                      String referenceAnswer,
+                                      String explanation) {
+    }
+
+    public record QuickReviewScore(Integer score, Boolean correct, String comment, String suggestion) {
+    }
+
+    public record UserProfileResult(String profileSummary,
+                                    List<String> weakPoints,
+                                    List<String> strengthPoints,
+                                    List<String> learningSuggestions) {
     }
 }

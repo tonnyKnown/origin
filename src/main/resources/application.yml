@@ -3,6 +3,10 @@ server:
   address: 0.0.0.0
 
 spring:
+  config:
+    import:
+      - optional:file:./.env[.properties]
+      - optional:file:./application-local.yml
   application:
     name: ai-interview-system
   datasource:

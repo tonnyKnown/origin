@@ -5,51 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>历史面试记录</title>
     <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            background: linear-gradient(135deg, #f7f9fc 0%, #eef4ff 100%);
-            color: #1f2937;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            min-width: 1280px;
-        }
+        /* 历史记录页面特有样式 */
 
         .app {
             width: 100%;
             min-height: 100vh;
             padding: 22px 24px;
-        }
-
-        .topbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            margin-bottom: 16px;
-        }
-
-        .layout {
-            display: grid;
-            grid-template-columns: 390px minmax(0, 1fr);
-            gap: 18px;
-            align-items: stretch;
-            min-height: calc(100vh - 116px);
-        }
-
-        .card {
-            background: rgba(255, 255, 255, 0.92);
-            border: 1px solid rgba(226, 232, 240, 0.9);
-            border-radius: 22px;
-            box-shadow: 0 18px 45px rgba(83, 105, 145, 0.10);
-            backdrop-filter: blur(8px);
-        }
-
-        .panel {
-            padding: 18px;
-            min-height: 0;
         }
 
         .detail-card {
@@ -62,74 +23,6 @@
             min-height: 0;
         }
 
-        h1, h2, h3 {
-            margin: 0 0 12px;
-        }
-
-        h1 {
-            letter-spacing: -0.03em;
-        }
-
-        h2 {
-            font-size: 20px;
-        }
-
-        p {
-            line-height: 1.7;
-        }
-
-        button, textarea {
-            border-radius: 12px;
-            font-size: 15px;
-        }
-
-        button {
-            width: auto;
-            min-width: 120px;
-            padding: 11px 14px;
-            border: 0;
-            background: #2563eb;
-            color: #fff;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        button.secondary {
-            background: #eef2ff;
-            color: #1e40af;
-        }
-
-        button.danger {
-            background: #fee2e2;
-            color: #b91c1c;
-        }
-
-        button.ghost {
-            background: #fff;
-            color: #2563eb;
-            border: 1px solid #c7d2fe;
-        }
-
-        textarea {
-            width: 100%;
-            min-height: 140px;
-            padding: 12px;
-            border: 1px solid #d9dfeb;
-            resize: vertical;
-            line-height: 1.6;
-        }
-
-        .muted {
-            color: #68758f;
-            font-size: 14px;
-        }
-
-        .score {
-            font-size: 38px;
-            font-weight: 800;
-            color: #2563eb;
-        }
-
         #historyList {
             display: flex;
             flex-direction: column;
@@ -137,338 +30,13 @@
             min-height: calc(100vh - 232px);
         }
 
-        .direction-group {
-            padding: 10px;
-            border: 1px solid #e8edf5;
-            border-radius: 18px;
-            background: rgba(248, 251, 255, 0.78);
-        }
-
-        .direction-group-head {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            margin-bottom: 8px;
-            padding: 2px 2px 0;
-        }
-
-        .direction-group-title {
-            overflow: hidden;
-            color: #172554;
-            font-weight: 800;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .direction-group-count {
-            flex: 0 0 auto;
-            padding: 3px 8px;
-            border-radius: 999px;
-            background: #eef2ff;
-            color: #1e40af;
-            font-size: 12px;
-            font-weight: 800;
-        }
-
-        .direction-group-list {
-            display: grid;
-            gap: 8px;
-        }
-
-        .history-card {
-            position: relative;
-            min-height: 58px;
-            padding: 10px 118px 9px 12px;
-            border: 1px solid #e8edf5;
-            border-radius: 16px;
-            background: #fbfdff;
-            cursor: pointer;
-            transition: 0.16s ease;
-            overflow: hidden;
-        }
-
-        .history-card:hover {
-            transform: translateY(-1px);
-            border-color: #bfd2ff;
-            box-shadow: 0 10px 24px rgba(37, 99, 235, 0.08);
-        }
-
-        .history-card h3 {
-            margin-bottom: 5px;
-            padding-right: 6px;
-            font-size: 15px;
-            line-height: 1.25;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .history-score-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            margin-bottom: 3px;
-        }
-
-        .history-score {
-            font-size: 18px;
-            font-weight: 800;
-            color: #2563eb;
-            white-space: nowrap;
-        }
-
-        .history-status {
-            padding: 2px 7px;
-            border-radius: 999px;
-            background: #eef6ff;
-            color: #2563eb;
-            font-size: 12px;
-            white-space: nowrap;
-        }
-
-        .history-actions {
-            position: absolute;
-            top: 9px;
-            right: 9px;
-            display: flex;
-            gap: 6px;
-            margin: 0;
-        }
-
-        .history-actions button {
-            width: 28px;
-            height: 28px;
-            min-width: 0;
-            padding: 0;
-            border-radius: 10px;
-            font-size: 12px;
-        }
-
-        .history-actions button.continue {
-            width: auto;
-            min-width: 58px;
-            padding: 0 9px;
-            background: #dcfce7;
-            color: #15803d;
-        }
-
-        .pagination {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            margin-top: 12px;
-        }
-
-        .pagination button {
-            min-width: 82px;
-        }
-
-        .filter-bar {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 8px;
-            margin: 12px 0;
-            padding: 12px;
-            border: 1px solid #e8edf5;
-            border-radius: 16px;
-            background: #f8fbff;
-        }
-
-        .filter-field {
-            min-width: 0;
-        }
-
-        .filter-bar label {
-            display: block;
-            margin-bottom: 6px;
-            color: #172554;
-            font-size: 13px;
-            font-weight: 800;
-        }
-
-        .filter-bar select {
-            width: 100%;
-            padding: 11px 12px;
-            border: 1px solid #d8e0ee;
-            border-radius: 12px;
-            background: #fff;
-            color: #111827;
-            font-size: 14px;
-            outline: none;
-        }
-
-        .filter-bar select:disabled {
-            color: #94a3b8;
-            background: #f1f5f9;
-            cursor: not-allowed;
-        }
-
         @media (max-width: 760px) {
             .filter-bar {
                 grid-template-columns: 1fr;
             }
         }
-
-        .history-card.active {
-            border-color: #2563eb;
-            background: linear-gradient(135deg, #eff6ff 0%, #f8fbff 100%);
-            box-shadow: 0 10px 24px rgba(37, 99, 235, 0.10);
-        }
-
-        .meta {
-            color: #68758f;
-            font-size: 13px;
-            line-height: 1.35;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-
-        .stat {
-            padding: 12px;
-            background: #f8fbff;
-            border-radius: 14px;
-        }
-
-        .question-card {
-            padding: 16px;
-            border: 1px solid #e5eaf3;
-            border-radius: 16px;
-            margin-top: 14px;
-            background: #fff;
-        }
-
-        .question-tabs {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
-            margin: 12px 0 16px;
-        }
-
-        .question-tab {
-            padding: 14px 10px;
-            border: 1px solid #e5eaf3;
-            border-radius: 14px;
-            background: #fbfdff;
-            cursor: pointer;
-            transition: 0.15s ease;
-        }
-
-        .question-tab:hover {
-            border-color: #93c5fd;
-            background: #eff6ff;
-        }
-
-        .question-tab.active {
-            border-color: #2563eb;
-            background: #eff6ff;
-            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.12);
-        }
-
-        .question-tab-title {
-            font-weight: 800;
-            margin-bottom: 8px;
-        }
-
-        .question-tab-score {
-            font-size: 24px;
-            font-weight: 800;
-            color: #2563eb;
-        }
-
-        .question-title {
-            display: flex;
-            justify-content: space-between;
-            gap: 8px;
-            margin-bottom: 10px;
-            font-weight: 800;
-        }
-
-        .tag {
-            display: inline-block;
-            padding: 4px 9px;
-            border-radius: 999px;
-            background: #eef2ff;
-            color: #1e40af;
-            font-size: 12px;
-            white-space: nowrap;
-        }
-
-        .answer-block {
-            padding: 12px;
-            background: #f8fafc;
-            border-radius: 12px;
-            margin: 10px 0;
-            white-space: pre-wrap;
-        }
-
-        .collapsible-text {
-            position: relative;
-            line-height: 1.7;
-            white-space: pre-wrap;
-            cursor: pointer;
-        }
-
-        .collapsible-text.collapsed {
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            padding-right: 132px;
-        }
-
-        .collapsible-text.collapsed::after {
-            content: "。。。点击查看全部";
-            position: absolute;
-            right: 0;
-            bottom: 0;
-            padding-left: 22px;
-            background: linear-gradient(90deg, rgba(255, 255, 255, 0), #fff 18%);
-            color: #2563eb;
-            font-weight: 700;
-        }
-
-        .collapsible-text.expanded::after {
-            content: "点击收起";
-            display: inline-block;
-            margin-left: 10px;
-            color: #2563eb;
-            font-weight: 700;
-        }
-
-        .reanswer-box {
-            margin-top: 12px;
-            padding: 12px;
-            background: #f8fafc;
-            border-radius: 12px;
-        }
-
-        .reanswer-box button {
-            margin-top: 10px;
-            margin-right: 8px;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .empty {
-            padding: 28px;
-            text-align: center;
-            color: #68758f;
-        }
-
     </style>
+    <link rel="stylesheet" href="common-theme.css">
 </head>
 <body>
 <main class="app">
@@ -480,7 +48,7 @@
         <button class="ghost" onclick="location.href='/'">返回面试首页</button>
     </div>
 
-    <div class="layout">
+    <div class="layout-sidebar">
         <section class="card panel">
             <h2>面试列表</h2>
             <div class="filter-bar">
@@ -495,6 +63,15 @@
                     <select id="directionLevel2Filter" onchange="changeDirectionFilter()" disabled>
                         <option value="">全部技术领域</option>
                     </select>
+                </div>
+            </div>
+            <div class="direction-tree-card">
+                <div class="direction-tree-head">
+                    <div class="direction-tree-title">方向树概览</div>
+                    <div class="direction-tree-subtitle">赛道 / 领域 / 岗位</div>
+                </div>
+                <div id="directionTreePreview" class="direction-tree-body">
+                    <div class="muted">方向树加载中...</div>
                 </div>
             </div>
             <p id="historyPageInfo" class="muted">按创建时间倒序展示，每页 10 条。</p>
@@ -603,9 +180,43 @@
             reviewOption.textContent = "复习面试";
             select.appendChild(reviewOption);
             renderDirectionLevel2Filter([]);
+            renderDirectionTreePreview();
         } catch (error) {
             console.warn("加载方向筛选失败", error);
+            document.getElementById("directionTreePreview").innerHTML = `<div class="muted">方向树加载失败，请刷新重试。</div>`;
         }
+    }
+
+    function renderDirectionTreePreview() {
+        const preview = document.getElementById("directionTreePreview");
+        if (!directionFilterTree.length) {
+            preview.innerHTML = `<div class="muted">暂无方向树数据。</div>`;
+            return;
+        }
+
+        preview.innerHTML = directionFilterTree.map(track => {
+            const children = track.children || [];
+            const childHtml = children.map(child => {
+                const leaves = child.children || [];
+                const visibleLeaves = leaves.slice(0, 3);
+                const leafHtml = visibleLeaves.map(leaf => `<span class="tree-leaf">${escapeHtml(leaf.name)}</span>`).join("");
+                const moreHtml = leaves.length > visibleLeaves.length
+                    ? `<span class="tree-more">+${leaves.length - visibleLeaves.length}</span>`
+                    : "";
+                return `
+                    <div class="tree-branch">
+                        <div class="tree-node"><span>${escapeHtml(child.name)}</span></div>
+                        ${leaves.length ? `<div class="tree-leaves">${leafHtml}${moreHtml}</div>` : ""}
+                    </div>
+                `;
+            }).join("");
+            return `
+                <div class="tree-track">
+                    <div class="tree-node"><strong>${escapeHtml(track.name)}</strong></div>
+                    ${childHtml}
+                </div>
+            `;
+        }).join("");
     }
 
     async function changeDirectionLevel1Filter() {
