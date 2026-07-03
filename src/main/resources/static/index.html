@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI智能面试系统</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: linear-gradient(135deg, #f7f9fc 0%, #eef4ff 100%);
+            color: #1f2937;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            min-width: 1180px;
+        }
+
+        .app {
+            width: 1180px;
+            min-height: 100vh;
+            margin: 0 auto;
+            padding: 28px 0;
+        }
+
+        .card {
+            margin-bottom: 18px;
+            padding: 24px;
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            border-radius: 22px;
+            box-shadow: 0 18px 45px rgba(83, 105, 145, 0.10);
+        }
+
+        h1, h2, h3 {
+            margin: 0 0 12px;
+        }
+
+        p {
+            line-height: 1.7;
+        }
+
+        select, textarea {
+            width: 100%;
+            border-radius: 12px;
+            font-size: 16px;
+        }
+
+        button {
+            width: auto;
+            min-width: 150px;
+            border-radius: 12px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        select, textarea {
+            padding: 12px;
+            border: 1px solid #d9dfeb;
+            background: #fff;
+        }
+
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 13px 14px;
+            border: 0;
+            background: #2563eb;
+            color: #fff;
+            font-weight: 700;
+        }
+
+        button.secondary {
+            background: #eef2ff;
+            color: #1e40af;
+        }
+
+        button.danger {
+            background: #dc2626;
+        }
+
+        button:disabled {
+            background: #a9b4c7;
+        }
+
+        .muted {
+            color: #68758f;
+            font-size: 14px;
+        }
+
+        .question {
+            padding: 16px;
+            background: #f8fafc;
+            border-left: 4px solid #2563eb;
+            border-radius: 12px;
+            line-height: 1.8;
+        }
+
+        .score {
+            font-size: 42px;
+            font-weight: 800;
+            color: #2563eb;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .home-layout {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 28px;
+            align-items: stretch;
+        }
+
+        .home-layout > h1,
+        .home-layout > p,
+        .home-layout > label,
+        .home-layout > select,
+        .home-layout > button {
+            display: none;
+        }
+
+        .home-title {
+            font-size: 40px;
+            letter-spacing: -0.04em;
+            margin-bottom: 16px;
+        }
+
+        .home-lead {
+            max-width: 680px;
+            color: #4b5870;
+            font-size: 17px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .feature-card {
+            padding: 14px;
+            background: #f8fbff;
+            border: 1px solid #e5eaf3;
+            border-radius: 16px;
+        }
+
+        .feature-card h3 {
+            margin-bottom: 6px;
+            font-size: 17px;
+        }
+
+        .action-panel {
+            padding: 22px;
+            background: #f8fbff;
+            border-radius: 18px;
+            border: 1px solid #e5eaf3;
+        }
+
+        .action-panel label {
+            display: block;
+            margin: 18px 0 8px;
+            font-weight: 700;
+        }
+
+        .action-panel button {
+            width: 100%;
+        }
+
+        .home-actions {
+            margin-top: 18px;
+        }
+
+        .summary-item {
+            padding: 12px;
+            border: 1px solid #e5eaf3;
+            border-radius: 12px;
+            margin-top: 10px;
+        }
+
+        .history-item {
+            padding: 14px;
+            border: 1px solid #e5eaf3;
+            border-radius: 14px;
+            margin-top: 12px;
+            background: #fbfdff;
+        }
+
+        .history-meta {
+            color: #68758f;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .reanswer-box {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body>
+<main class="app">
+    <section id="home" class="card home-layout">
+        <div>
+            <h1 class="home-title">AI智能面试系统</h1>
+            <p class="home-lead">面向 PC 端使用的模拟面试工具，系统按 Java 基础、JVM/并发、数据库/缓存/中间件、项目实战、架构设计 5 类题目逐题提问，并在每题提交后实时评分和给出改进建议。</p>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3>逐题评分</h3>
+                    <p class="muted">每题 20 分，提交答案后立即返回得分、点评、总结和标准答案。</p>
+                </div>
+                <div class="feature-card">
+                    <h3>PC 答题</h3>
+                    <p class="muted">首页和答题流程按桌面端宽屏布局设计，适合电脑浏览器操作。</p>
+                </div>
+                <div class="feature-card">
+                    <h3>历史复盘</h3>
+                    <p class="muted">历史页面支持查看每次面试明细、标准答案和单题重新作答。</p>
+                </div>
+                <div class="feature-card">
+                    <h3>能力建议</h3>
+                    <p class="muted">最终基于 5 道题汇总总分，并给出整体评价和提升方向。</p>
+                </div>
+            </div>
+        </div>
+        <div class="action-panel">
+            <h2>开始一次面试</h2>
+            <p class="muted">选择面试方向后开始答题。语音识别仍依赖浏览器能力，也可以直接手动输入答案。</p>
+            <label>面试方向</label>
+            <select id="positionType">
+                <option value="Java高级开发">Java高级开发</option>
+                <option value="Java架构师">Java架构师</option>
+                <option value="AI应用开发">AI应用开发</option>
+                <option value="后端微服务架构">后端微服务架构</option>
+            </select>
+            <div class="home-actions">
+                <button onclick="startInterview()">开始面试</button>
+                <button class="secondary" onclick="location.href='history.html'">查看历史面试记录</button>
+                <button class="secondary" onclick="location.href='manual-questions.html'">手动提问记录</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="interview" class="card hidden">
+        <h2 id="questionTitle">第 1 / 5 题</h2>
+        <p id="questionType" class="muted"></p>
+        <div id="questionContent" class="question"></div>
+        <p class="muted">请点击开始录音，回答完成后点击结束录音，再确认文字是否准确。</p>
+        <p id="speechSupportTip" class="muted"></p>
+
+        <div class="row">
+            <button id="startRecordBtn" onclick="startRecord()">开始录音</button>
+            <button id="stopRecordBtn" class="danger" onclick="stopRecord()" disabled>结束录音</button>
+        </div>
+
+        <h3>识别文字</h3>
+        <textarea id="userAnswer" placeholder="语音识别结果会出现在这里，也可以手动修改。"></textarea>
+        <button onclick="submitAnswer()">确认文字并提交评分</button>
+        <button class="secondary" onclick="clearAnswer()">重新输入</button>
+    </section>
+
+    <section id="result" class="card hidden">
+        <h2>本题评分</h2>
+        <div><span id="score" class="score">0</span> / 20</div>
+        <h3>标准答案</h3>
+        <p id="referenceAnswer"></p>
+        <h3>本题总结</h3>
+        <p id="answerSummary"></p>
+        <h3>AI点评</h3>
+        <p id="comment"></p>
+        <h3>改进建议</h3>
+        <p id="suggestion"></p>
+        <button id="nextBtn" onclick="nextQuestion()">下一题</button>
+        <button id="summaryBtn" class="hidden" onclick="loadSummary()">查看总结</button>
+    </section>
+
+    <section id="summary" class="card hidden">
+        <h2>面试总结</h2>
+        <div><span id="totalScore" class="score">0</span> / 100</div>
+        <h3>整体评价</h3>
+        <p id="overallComment"></p>
+        <h3>提升建议</h3>
+        <p id="improvementAdvice"></p>
+        <h3>每题明细</h3>
+        <div id="questionList"></div>
+        <button onclick="location.reload()">重新面试</button>
+    </section>
+
+    <section id="history" class="card hidden">
+        <h2>历史面试记录</h2>
+        <p class="muted">按创建时间倒序展示，点击详情查看每题回答和建议。</p>
+        <div id="historyList"></div>
+        <button class="secondary" onclick="show('home')">返回首页</button>
+    </section>
+
+    <section id="historyDetail" class="card hidden">
+        <h2>历史面试详情</h2>
+        <div><span id="historyTotalScore" class="score">0</span> / 100</div>
+        <p id="historyBaseInfo" class="muted"></p>
+        <h3>整体评价</h3>
+        <p id="historyOverallComment"></p>
+        <h3>提升建议</h3>
+        <p id="historyImprovementAdvice"></p>
+        <h3>每题明细</h3>
+        <div id="historyQuestionList"></div>
+        <button class="secondary" onclick="loadHistory()">返回历史列表</button>
+    </section>
+</main>
+
+<script>
+    let interviewId = null;
+    let currentQuestion = null;
+    let recognition = null;
+    let recognizing = false;
+    let currentHistoryInterviewId = null;
+
+    window.addEventListener("DOMContentLoaded", () => {
+        updateSpeechSupportTip();
+        resumeFromUrl();
+    });
+
+    function show(id) {
+        ["home", "interview", "result", "summary", "history", "historyDetail"].forEach(item => {
+            document.getElementById(item).classList.toggle("hidden", item !== id);
+        });
+    }
+
+    async function request(url, options = {}) {
+        const response = await fetch(url, {
+            headers: {"Content-Type": "application/json"},
+            ...options
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || "请求失败");
+        }
+        return data;
+    }
+
+    async function startInterview() {
+        try {
+            const positionType = document.getElementById("positionType").value;
+            const data = await request("/api/interview/start", {
+                method: "POST",
+                body: JSON.stringify({positionType})
+            });
+            interviewId = data.interviewId;
+            renderQuestion(data);
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    async function resumeFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        const resumeId = params.get("continueInterviewId");
+        if (!resumeId) {
+            return;
+        }
+        try {
+            const data = await request(`/api/interview/${resumeId}/continue`, {method: "POST"});
+            interviewId = data.interviewId;
+            renderQuestion(data);
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    function renderQuestion(question) {
+        currentQuestion = question;
+        document.getElementById("questionTitle").innerText = `第 ${question.questionIndex} / ${question.totalQuestions} 题`;
+        document.getElementById("questionType").innerText = `题型：${formatQuestionType(question.questionType)}`;
+        document.getElementById("questionContent").innerText = question.questionContent;
+        document.getElementById("userAnswer").value = "";
+        show("interview");
+    }
+
+    function getSpeechRecognition() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("当前浏览器不支持浏览器语音识别。请尝试手机 Chrome、Edge 或较新版百度浏览器；也可以直接手动输入答案。");
+            return null;
+        }
+        const instance = new SpeechRecognition();
+        instance.lang = "zh-CN";
+        instance.continuous = true;
+        instance.interimResults = true;
+        instance.onresult = event => {
+            let text = "";
+            for (let i = 0; i < event.results.length; i++) {
+                text += event.results[i][0].transcript;
+            }
+            document.getElementById("userAnswer").value = text;
+        };
+        instance.onerror = event => {
+            recognizing = false;
+            updateRecordButtons();
+            alert(buildSpeechErrorMessage(event.error));
+        };
+        instance.onend = () => {
+            recognizing = false;
+            updateRecordButtons();
+        };
+        return instance;
+    }
+
+    function updateSpeechSupportTip() {
+        const tip = document.getElementById("speechSupportTip");
+        if (!tip) {
+            return;
+        }
+        const supported = Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
+        const browserName = detectBrowserName();
+        if (supported) {
+            tip.innerText = `当前浏览器：${browserName}，已检测到浏览器语音识别能力。百度浏览器如果使用 Chromium 内核且开放该能力，也可以直接使用。`;
+        } else {
+            tip.innerText = `当前浏览器：${browserName}，未检测到浏览器语音识别能力。可换 Chrome/Edge/新版百度浏览器，或手动输入答案。`;
+        }
+    }
+
+    function detectBrowserName() {
+        const ua = navigator.userAgent || "";
+        if (/baidubrowser|bidubrowser/i.test(ua)) {
+            return "百度浏览器";
+        }
+        if (/Edg/i.test(ua)) {
+            return "Edge";
+        }
+        if (/Chrome|CriOS/i.test(ua)) {
+            return "Chrome/Chromium";
+        }
+        if (/Safari/i.test(ua)) {
+            return "Safari";
+        }
+        return "未知浏览器";
+    }
+
+    function buildSpeechErrorMessage(error) {
+        const mapping = {
+            "not-allowed": "麦克风权限被拒绝，请在浏览器地址栏或系统设置中允许麦克风权限。",
+            "service-not-allowed": "当前浏览器不允许使用在线语音识别服务，百度浏览器可能关闭了该能力；请换 Chrome/Edge 或手动输入。",
+            "network": "语音识别网络服务不可用，请检查网络后重试。",
+            "no-speech": "没有识别到语音，请靠近麦克风后重试。",
+            "audio-capture": "无法获取麦克风，请检查设备或浏览器权限。",
+            "aborted": "语音识别已中断。"
+        };
+        return "语音识别失败：" + (mapping[error] || error || "未知错误");
+    }
+
+    function startRecord() {
+        recognition = getSpeechRecognition();
+        if (!recognition) {
+            return;
+        }
+        recognizing = true;
+        updateRecordButtons();
+        recognition.start();
+    }
+
+    function stopRecord() {
+        if (recognition && recognizing) {
+            recognition.stop();
+        }
+        recognizing = false;
+        updateRecordButtons();
+    }
+
+    function updateRecordButtons() {
+        document.getElementById("startRecordBtn").disabled = recognizing;
+        document.getElementById("stopRecordBtn").disabled = !recognizing;
+    }
+
+    function clearAnswer() {
+        document.getElementById("userAnswer").value = "";
+    }
+
+    async function submitAnswer() {
+        const userAnswer = document.getElementById("userAnswer").value.trim();
+        if (!userAnswer) {
+            alert("请先录音识别或手动输入答案");
+            return;
+        }
+
+        try {
+            const data = await request(`/api/interview/${interviewId}/answer`, {
+                method: "POST",
+                body: JSON.stringify({
+                    questionId: currentQuestion.questionId,
+                    userAnswer
+                })
+            });
+            document.getElementById("score").innerText = data.score;
+            document.getElementById("referenceAnswer").innerText = data.referenceAnswer;
+            document.getElementById("answerSummary").innerText = data.answerSummary;
+            document.getElementById("comment").innerText = data.aiComment;
+            document.getElementById("suggestion").innerText = data.suggestion;
+            document.getElementById("nextBtn").classList.toggle("hidden", data.finished);
+            document.getElementById("summaryBtn").classList.toggle("hidden", !data.finished);
+            show("result");
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    async function nextQuestion() {
+        try {
+            const data = await request(`/api/interview/${interviewId}/next`, {method: "POST"});
+            renderQuestion(data);
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    async function loadSummary() {
+        try {
+            const data = await request(`/api/interview/${interviewId}/summary`);
+            document.getElementById("totalScore").innerText = data.totalScore;
+            document.getElementById("overallComment").innerText = data.overallComment;
+            document.getElementById("improvementAdvice").innerText = data.improvementAdvice;
+            const list = document.getElementById("questionList");
+            list.innerHTML = "";
+            data.questions.forEach(item => {
+                const div = document.createElement("div");
+                div.className = "summary-item";
+                div.innerHTML = `
+                    <b>第 ${item.questionIndex} 题：${formatQuestionType(item.questionType)}｜${item.score} / 20</b>
+                    <p>${escapeHtml(item.questionContent)}</p>
+                    <p><b>标准答案：</b>${escapeHtml(item.referenceAnswer)}</p>
+                    <p><b>你的回答：</b>${escapeHtml(item.userAnswer)}</p>
+                    <p><b>本题总结：</b>${escapeHtml(item.answerSummary)}</p>
+                    <p><b>点评：</b>${escapeHtml(item.aiComment)}</p>
+                    <p><b>建议：</b>${escapeHtml(item.suggestion)}</p>
+                `;
+                list.appendChild(div);
+            });
+            show("summary");
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    async function loadHistory() {
+        try {
+            const data = await request("/api/interview/history");
+            const list = document.getElementById("historyList");
+            list.innerHTML = "";
+            if (!data.length) {
+                list.innerHTML = `<p class="muted">暂无历史面试记录。</p>`;
+            }
+            data.forEach(item => {
+                const div = document.createElement("div");
+                div.className = "history-item";
+                div.innerHTML = `
+                    <h3>${escapeHtml(item.positionType)}：${item.totalScore || 0} / 100</h3>
+                    <div class="history-meta">
+                        状态：${formatStatus(item.status)}<br>
+                        开始时间：${formatTime(item.createdAt)}<br>
+                        完成时间：${formatTime(item.finishedAt)}
+                    </div>
+                    <button onclick="loadHistoryDetail(${item.interviewId})">查看详情</button>
+                `;
+                list.appendChild(div);
+            });
+            show("history");
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    async function loadHistoryDetail(targetInterviewId) {
+        try {
+            currentHistoryInterviewId = targetInterviewId;
+            const data = await request(`/api/interview/history/${targetInterviewId}`);
+            document.getElementById("historyTotalScore").innerText = data.totalScore || 0;
+            document.getElementById("historyBaseInfo").innerText =
+                `${data.positionType} ｜ ${formatStatus(data.status)} ｜ ${formatTime(data.createdAt)}`;
+            document.getElementById("historyOverallComment").innerText = data.overallComment || "暂无整体评价";
+            document.getElementById("historyImprovementAdvice").innerText = data.improvementAdvice || "暂无提升建议";
+
+            const list = document.getElementById("historyQuestionList");
+            list.innerHTML = "";
+            data.questions.forEach(item => {
+                const div = document.createElement("div");
+                div.className = "summary-item";
+                div.innerHTML = `
+                    <b>第 ${item.questionIndex} 题：${formatQuestionType(item.questionType)}｜${item.score} / 20</b>
+                    <p>${escapeHtml(item.questionContent)}</p>
+                    <p><b>标准答案：</b>${escapeHtml(item.referenceAnswer)}</p>
+                    <p><b>你的回答：</b>${escapeHtml(item.userAnswer)}</p>
+                    <p><b>本题总结：</b>${escapeHtml(item.answerSummary)}</p>
+                    <p><b>点评：</b>${escapeHtml(item.aiComment)}</p>
+                    <p><b>建议：</b>${escapeHtml(item.suggestion)}</p>
+                    <button class="secondary" onclick="showReAnswerEditor(${item.questionId})">重新回答</button>
+                    <div id="reanswerBox-${item.questionId}" class="reanswer-box hidden">
+                        <textarea id="reanswerText-${item.questionId}" placeholder="请输入这道题的新答案，提交后系统会重新评分。">${escapeHtml(item.userAnswer)}</textarea>
+                        <button onclick="submitReAnswer(${item.questionId})">提交重新评分</button>
+                        <button class="secondary" onclick="cancelReAnswer(${item.questionId})">取消</button>
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+            show("historyDetail");
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    function showReAnswerEditor(questionId) {
+        document.getElementById(`reanswerBox-${questionId}`).classList.remove("hidden");
+    }
+
+    function cancelReAnswer(questionId) {
+        document.getElementById(`reanswerBox-${questionId}`).classList.add("hidden");
+    }
+
+    async function submitReAnswer(questionId) {
+        const textarea = document.getElementById(`reanswerText-${questionId}`);
+        const userAnswer = textarea.value.trim();
+        if (!userAnswer) {
+            alert("请先输入新的答案");
+            return;
+        }
+        try {
+            const data = await request(`/api/interview/${currentHistoryInterviewId}/questions/${questionId}/answer`, {
+                method: "PUT",
+                body: JSON.stringify({userAnswer})
+            });
+            alert(`重新评分成功，本题 ${data.score} / 20，总分已更新为 ${data.totalScore} / 100`);
+            await loadHistoryDetail(currentHistoryInterviewId);
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    function formatStatus(status) {
+        return status === "FINISHED" ? "已完成" : "进行中";
+    }
+
+    function formatQuestionType(type) {
+        const mapping = {
+            BASIC: "Java基础八股",
+            CONCURRENCY: "JVM/并发八股",
+            MIDDLEWARE: "数据库/缓存/中间件",
+            PROJECT: "项目实战",
+            ARCHITECTURE: "架构设计"
+        };
+        return mapping[type] || "未分类";
+    }
+
+    function formatTime(value) {
+        if (!value) {
+            return "-";
+        }
+        return String(value).replace("T", " ").substring(0, 19);
+    }
+
+    function escapeHtml(value) {
+        return String(value || "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll("\"", "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+</script>
+</body>
+</html>

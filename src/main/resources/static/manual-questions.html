@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手动提问记录</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: linear-gradient(135deg, #f7f9fc 0%, #eef4ff 100%);
+            color: #1f2937;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        .app {
+            width: 100%;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin-bottom: 18px;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 420px minmax(0, 1fr);
+            gap: 18px;
+            align-items: stretch;
+            min-height: calc(100vh - 118px);
+        }
+
+        .card {
+            padding: 22px;
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            border-radius: 22px;
+            box-shadow: 0 18px 45px rgba(83, 105, 145, 0.10);
+        }
+
+        .layout > .card:last-child {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        h1, h2, h3 {
+            margin: 0 0 12px;
+        }
+
+        p {
+            line-height: 1.7;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 13px;
+            border: 1px solid #d9dfeb;
+            border-radius: 14px;
+            font-size: 16px;
+            background: #fff;
+        }
+
+        textarea {
+            min-height: 190px;
+            line-height: 1.6;
+            resize: vertical;
+        }
+
+        button {
+            min-width: 120px;
+            margin-top: 10px;
+            padding: 12px 14px;
+            border: 0;
+            border-radius: 12px;
+            background: #2563eb;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        button.secondary {
+            background: #eef2ff;
+            color: #1e40af;
+        }
+
+        button:disabled {
+            background: #a9b4c7;
+            cursor: not-allowed;
+        }
+
+        .muted {
+            color: #68758f;
+            font-size: 14px;
+        }
+
+        .question-list {
+            display: grid;
+            gap: 12px;
+            flex: 1;
+            align-content: start;
+        }
+
+        .search-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 180px auto auto;
+            gap: 10px;
+            align-items: start;
+            margin-bottom: 14px;
+        }
+
+        .search-row button {
+            margin-top: 0;
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        .pagination-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .card-actions {
+            display: flex;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: flex-start;
+            padding-top: 12px;
+            border-top: 1px dashed #dbe3f0;
+        }
+
+        .card-actions button {
+            min-width: 92px;
+            margin-top: 0;
+        }
+
+        .tag-select {
+            min-width: 150px;
+            height: 43px;
+            padding: 9px 12px;
+            font-size: 14px;
+            flex: 0 0 170px;
+        }
+
+        .level-badge {
+            display: inline-flex;
+            align-items: center;
+            flex-shrink: 0;
+            margin-left: 0;
+            padding: 3px 9px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .level-high {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .level-medium {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+        .level-low {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .question-card {
+            padding: 18px;
+            border: 1px solid #e5eaf3;
+            border-radius: 20px;
+            background: #fbfdff;
+            cursor: pointer;
+            transition: 0.15s ease;
+            display: grid;
+            gap: 12px;
+        }
+
+        .question-card:hover {
+            border-color: #bfd2ff;
+            box-shadow: 0 10px 24px rgba(37, 99, 235, 0.08);
+            transform: translateY(-1px);
+        }
+
+        .question-head {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .question-text {
+            margin: 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.65;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .question-text b {
+            flex-shrink: 0;
+            color: #334155;
+        }
+
+        .question-content {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .question-head .muted {
+            margin: 0;
+            padding: 8px 10px;
+            border-radius: 12px;
+            background: #f8fafc;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .answer-box {
+            margin-top: 12px;
+            padding: 13px;
+            border-radius: 14px;
+            background: #f8fafc;
+            line-height: 1.7;
+        }
+
+        .answer-box.hidden {
+            display: none;
+        }
+
+        .answer-section {
+            padding: 13px;
+            border-radius: 14px;
+            white-space: pre-wrap;
+        }
+
+        .answer-section + .answer-section {
+            margin-top: 12px;
+        }
+
+        .ai-section {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+        }
+
+        .remark-section {
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+        }
+
+        .self-test-section {
+            background: #ecfdf5;
+            border: 1px solid #bbf7d0;
+        }
+
+        .answer-title {
+            display: inline-block;
+            margin-bottom: 6px;
+            padding: 3px 9px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .ai-section .answer-title {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .remark-section .answer-title {
+            background: #ffedd5;
+            color: #c2410c;
+        }
+
+        .self-test-section .answer-title {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .score-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 62px;
+            margin-left: 8px;
+            padding: 3px 9px;
+            border-radius: 999px;
+            background: #16a34a;
+            color: #fff;
+            font-weight: 800;
+        }
+
+        .remark-editor,
+        .self-test-editor {
+            margin-top: 12px;
+            padding: 13px;
+            border-radius: 14px;
+            background: #f8fbff;
+            border: 1px solid #e5eaf3;
+        }
+
+        .remark-editor.hidden,
+        .self-test-editor.hidden {
+            display: none;
+        }
+
+        .remark-editor textarea,
+        .self-test-editor textarea {
+            min-height: 130px;
+        }
+
+        .remark-actions,
+        .self-test-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .empty {
+            padding: 40px;
+            text-align: center;
+            color: #68758f;
+        }
+
+        @media (max-width: 900px) {
+            .app {
+                width: 100%;
+                padding: 14px;
+            }
+
+            .topbar,
+            .question-head,
+            .pagination {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .layout {
+                grid-template-columns: 1fr;
+                min-height: auto;
+            }
+
+            .search-row {
+                grid-template-columns: 1fr;
+            }
+
+            .card-actions,
+            .remark-actions,
+            .self-test-actions,
+            .pagination-actions {
+                flex-wrap: wrap;
+            }
+
+            button,
+            .card-actions button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+<main class="app">
+    <div class="topbar">
+        <div>
+            <h1>手动提问记录</h1>
+            <p class="muted">记录你手动输入的问题，后续可以点击每条记录旁边的按钮，让大模型给出简洁回答并保存到数据库。</p>
+        </div>
+        <button class="secondary" onclick="location.href='/'">返回首页</button>
+    </div>
+
+    <div class="layout">
+        <section class="card">
+            <h2>新增问题</h2>
+            <p class="muted">先保存问题，再在右侧历史记录中生成 AI 简答。</p>
+            <textarea id="questionContent" placeholder="请输入你的问题，例如：Redis 缓存击穿和缓存穿透有什么区别？"></textarea>
+            <button onclick="saveQuestion()">保存问题</button>
+        </section>
+
+        <section class="card">
+            <h2>历史记录</h2>
+            <div class="search-row">
+                <input id="keywordInput" placeholder="按问题内容模糊搜索">
+                <select id="levelFilter">
+                    <option value="">全部标签</option>
+                    <option value="HIGH">高（不理解）</option>
+                    <option value="MEDIUM">中（半知半解）</option>
+                    <option value="LOW">低（已理解）</option>
+                </select>
+                <button onclick="searchQuestions()">查询</button>
+                <button class="secondary" onclick="resetSearch()">重置</button>
+            </div>
+            <div id="questionList" class="question-list"></div>
+            <div id="pagination" class="pagination">
+                <span id="pageInfo" class="muted"></span>
+                <div class="pagination-actions">
+                    <button id="prevPageBtn" class="secondary" onclick="changePage(-1)">上一页</button>
+                    <button id="nextPageBtn" class="secondary" onclick="changePage(1)">下一页</button>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+
+<script>
+    let currentPage = 1;
+    const pageSize = 10;
+    let currentKeyword = "";
+    let currentUnderstandingLevel = "";
+
+    window.addEventListener("DOMContentLoaded", loadQuestions);
+
+    async function request(url, options = {}) {
+        const response = await fetch(url, {
+            headers: {"Content-Type": "application/json"},
+            ...options
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || "请求失败");
+        }
+        return data;
+    }
+
+    async function saveQuestion() {
+        const textarea = document.getElementById("questionContent");
+        const questionContent = textarea.value.trim();
+        if (!questionContent) {
+            alert("请先输入问题");
+            return;
+        }
+
+        try {
+            await request("/api/manual-questions", {
+                method: "POST",
+                body: JSON.stringify({questionContent})
+            });
+            textarea.value = "";
+            currentPage = 1;
+            await loadQuestions();
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    async function loadQuestions() {
+        try {
+            const query = new URLSearchParams({
+                page: currentPage,
+                size: pageSize,
+                keyword: currentKeyword,
+                understandingLevel: currentUnderstandingLevel
+            });
+            const data = await request(`/api/manual-questions?${query.toString()}`);
+            if (!data.records.length && data.total > 0 && currentPage > 1) {
+                currentPage = data.totalPages;
+                await loadQuestions();
+                return;
+            }
+            renderQuestions(data.records);
+            renderPagination(data);
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    function searchQuestions() {
+        currentKeyword = document.getElementById("keywordInput").value.trim();
+        currentUnderstandingLevel = document.getElementById("levelFilter").value;
+        currentPage = 1;
+        loadQuestions();
+    }
+
+    function resetSearch() {
+        document.getElementById("keywordInput").value = "";
+        document.getElementById("levelFilter").value = "";
+        currentKeyword = "";
+        currentUnderstandingLevel = "";
+        currentPage = 1;
+        loadQuestions();
+    }
+
+    function changePage(delta) {
+        currentPage = Math.max(1, currentPage + delta);
+        loadQuestions();
+    }
+
+    function renderQuestions(items) {
+        const list = document.getElementById("questionList");
+        list.innerHTML = "";
+        if (!items.length) {
+            list.innerHTML = `<div class="empty">暂无手动提问记录。</div>`;
+            return;
+        }
+
+        items.forEach(item => {
+            const div = document.createElement("div");
+            div.className = "question-card";
+            div.onclick = () => toggleAnswer(item.id, Boolean(item.aiAnswer || item.manualRemark || item.selfTestScore != null));
+            div.innerHTML = `
+                <div class="question-head">
+                    <div>
+                        <p class="question-text">
+                            <b>问题：</b><span class="question-content">${escapeHtml(item.questionContent)}</span>
+                            <span class="level-badge ${levelClass(item.understandingLevel)}">${formatUnderstandingLevel(item.understandingLevel)}</span>
+                        </p>
+                        <p class="muted">
+                            创建时间：${formatTime(item.createdAt)}
+                            ${item.answeredAt ? ` ｜ AI回答时间：${formatTime(item.answeredAt)}` : ""}
+                            ${item.remarkUpdatedAt ? ` ｜ 备注时间：${formatTime(item.remarkUpdatedAt)}` : ""}
+                            ${item.selfTestAt ? ` ｜ 自测时间：${formatTime(item.selfTestAt)}` : ""}
+                        </p>
+                    </div>
+                    <div class="card-actions">
+                        <select class="tag-select" onclick="event.stopPropagation()" onchange="updateQuestionTag(event, ${item.id})">
+                            <option value="HIGH" ${item.understandingLevel === "HIGH" ? "selected" : ""}>高（不理解）</option>
+                            <option value="MEDIUM" ${item.understandingLevel === "MEDIUM" ? "selected" : ""}>中（半知半解）</option>
+                            <option value="LOW" ${item.understandingLevel === "LOW" ? "selected" : ""}>低（已理解）</option>
+                        </select>
+                        <button id="answerBtn-${item.id}" onclick="answerQuestion(event, ${item.id})">${item.aiAnswer ? "重新回答" : "AI简答"}</button>
+                        <button class="secondary" onclick="showRemarkEditor(event, ${item.id})">${item.manualRemark ? "修改备注" : "备注"}</button>
+                        <button class="secondary" onclick="showSelfTestEditor(event, ${item.id})">考试_自测</button>
+                    </div>
+                </div>
+                ${(item.aiAnswer || item.manualRemark || item.selfTestScore != null) ? `
+                    <div id="answerBox-${item.id}" class="answer-box hidden">
+                        ${item.aiAnswer ? `
+                            <div class="answer-section ai-section">
+                                <span class="answer-title">AI回答</span><br>
+                                ${escapeHtml(item.aiAnswer)}
+                            </div>
+                        ` : ""}
+                        ${item.manualRemark ? `
+                            <div class="answer-section remark-section">
+                                <span class="answer-title">人工备注</span><br>
+                                ${escapeHtml(item.manualRemark)}
+                            </div>
+                        ` : ""}
+                        ${item.selfTestScore != null ? `
+                            <div class="answer-section self-test-section">
+                                <span class="answer-title">考试_自测</span>
+                                <span class="score-badge">${item.selfTestScore} / 20</span><br>
+                                <b>我的答案：</b><br>${escapeHtml(item.selfTestAnswer)}<br><br>
+                                <b>点评：</b><br>${escapeHtml(item.selfTestComment)}<br><br>
+                                <b>建议：</b><br>${escapeHtml(item.selfTestSuggestion)}
+                            </div>
+                        ` : ""}
+                    </div>
+                ` : ""}
+                <div id="remarkEditor-${item.id}" class="remark-editor hidden" onclick="event.stopPropagation()">
+                    <textarea id="remarkText-${item.id}" placeholder="请输入人工备注回答">${escapeHtml(item.manualRemark)}</textarea>
+                    <div class="remark-actions">
+                        <button onclick="saveManualRemark(event, ${item.id})">保存备注</button>
+                        <button class="secondary" onclick="cancelRemarkEditor(event, ${item.id})">取消</button>
+                    </div>
+                </div>
+                <div id="selfTestEditor-${item.id}" class="self-test-editor hidden" onclick="event.stopPropagation()">
+                    <textarea id="selfTestText-${item.id}" placeholder="请输入你的自测答案，系统会按20分制评分">${escapeHtml(item.selfTestAnswer)}</textarea>
+                    <div class="self-test-actions">
+                        <button id="selfTestBtn-${item.id}" onclick="submitSelfTest(event, ${item.id})">提交自测</button>
+                        <button class="secondary" onclick="cancelSelfTestEditor(event, ${item.id})">取消</button>
+                    </div>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+    }
+
+    function renderPagination(pageData) {
+        const pagination = document.getElementById("pagination");
+        const pageInfo = document.getElementById("pageInfo");
+        const prevPageBtn = document.getElementById("prevPageBtn");
+        const nextPageBtn = document.getElementById("nextPageBtn");
+        if (!pageData.total) {
+            pagination.style.display = "none";
+            return;
+        }
+        pagination.style.display = "flex";
+        pageInfo.innerText = `第 ${pageData.page} / ${pageData.totalPages} 页，共 ${pageData.total} 条`;
+        prevPageBtn.disabled = pageData.page <= 1;
+        nextPageBtn.disabled = pageData.page >= pageData.totalPages;
+    }
+
+    function toggleAnswer(id, hasAnswer) {
+        if (!hasAnswer) {
+            return;
+        }
+        document.getElementById(`answerBox-${id}`).classList.toggle("hidden");
+    }
+
+    async function answerQuestion(event, id) {
+        event.stopPropagation();
+        const button = document.getElementById(`answerBtn-${id}`);
+        button.disabled = true;
+        button.innerText = "生成中...";
+        try {
+            await request(`/api/manual-questions/${id}/answer`, {method: "POST"});
+            await loadQuestions();
+        } catch (error) {
+            alert(error.message);
+            button.disabled = false;
+            button.innerText = "AI简答";
+        }
+    }
+
+    function showRemarkEditor(event, id) {
+        event.stopPropagation();
+        document.getElementById(`remarkEditor-${id}`).classList.remove("hidden");
+    }
+
+    function cancelRemarkEditor(event, id) {
+        event.stopPropagation();
+        document.getElementById(`remarkEditor-${id}`).classList.add("hidden");
+    }
+
+    async function saveManualRemark(event, id) {
+        event.stopPropagation();
+        const textarea = document.getElementById(`remarkText-${id}`);
+        try {
+            await request(`/api/manual-questions/${id}/remark`, {
+                method: "PUT",
+                body: JSON.stringify({manualRemark: textarea.value.trim()})
+            });
+            await loadQuestions();
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    async function updateQuestionTag(event, id) {
+        event.stopPropagation();
+        try {
+            await request(`/api/manual-questions/${id}/tag`, {
+                method: "PUT",
+                body: JSON.stringify({understandingLevel: event.target.value})
+            });
+            await loadQuestions();
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    function showSelfTestEditor(event, id) {
+        event.stopPropagation();
+        document.getElementById(`selfTestEditor-${id}`).classList.remove("hidden");
+    }
+
+    function cancelSelfTestEditor(event, id) {
+        event.stopPropagation();
+        document.getElementById(`selfTestEditor-${id}`).classList.add("hidden");
+    }
+
+    async function submitSelfTest(event, id) {
+        event.stopPropagation();
+        const textarea = document.getElementById(`selfTestText-${id}`);
+        const button = document.getElementById(`selfTestBtn-${id}`);
+        const userAnswer = textarea.value.trim();
+        if (!userAnswer) {
+            alert("请先输入自测答案");
+            return;
+        }
+        button.disabled = true;
+        button.innerText = "评分中...";
+        try {
+            await request(`/api/manual-questions/${id}/self-test`, {
+                method: "POST",
+                body: JSON.stringify({userAnswer})
+            });
+            await loadQuestions();
+        } catch (error) {
+            alert(error.message);
+            button.disabled = false;
+            button.innerText = "提交自测";
+        }
+    }
+
+    function formatTime(value) {
+        if (!value) {
+            return "-";
+        }
+        return String(value).replace("T", " ").substring(0, 19);
+    }
+
+    function formatUnderstandingLevel(value) {
+        const labels = {
+            HIGH: "高（不理解）",
+            MEDIUM: "中（半知半解）",
+            LOW: "低（已理解）"
+        };
+        return labels[value] || "高（不理解）";
+    }
+
+    function levelClass(value) {
+        const classes = {
+            HIGH: "level-high",
+            MEDIUM: "level-medium",
+            LOW: "level-low"
+        };
+        return classes[value] || "level-high";
+    }
+
+    function escapeHtml(value) {
+        return String(value || "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll("\"", "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+</script>
+</body>
+</html>

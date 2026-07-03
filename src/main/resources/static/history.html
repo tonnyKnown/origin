@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>历史面试记录</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: linear-gradient(135deg, #f7f9fc 0%, #eef4ff 100%);
+            color: #1f2937;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            min-width: 1280px;
+        }
+
+        .app {
+            width: 100%;
+            min-height: 100vh;
+            padding: 22px 24px;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 390px minmax(0, 1fr);
+            gap: 18px;
+            align-items: stretch;
+            min-height: calc(100vh - 116px);
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.92);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            border-radius: 22px;
+            box-shadow: 0 18px 45px rgba(83, 105, 145, 0.10);
+            backdrop-filter: blur(8px);
+        }
+
+        .panel {
+            padding: 18px;
+            min-height: 0;
+        }
+
+        .detail-card {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #detailPanel {
+            flex: 1;
+            min-height: 0;
+        }
+
+        h1, h2, h3 {
+            margin: 0 0 12px;
+        }
+
+        h1 {
+            letter-spacing: -0.03em;
+        }
+
+        h2 {
+            font-size: 20px;
+        }
+
+        p {
+            line-height: 1.7;
+        }
+
+        button, textarea {
+            border-radius: 12px;
+            font-size: 15px;
+        }
+
+        button {
+            width: auto;
+            min-width: 120px;
+            padding: 11px 14px;
+            border: 0;
+            background: #2563eb;
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        button.secondary {
+            background: #eef2ff;
+            color: #1e40af;
+        }
+
+        button.danger {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        button.ghost {
+            background: #fff;
+            color: #2563eb;
+            border: 1px solid #c7d2fe;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 140px;
+            padding: 12px;
+            border: 1px solid #d9dfeb;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        .muted {
+            color: #68758f;
+            font-size: 14px;
+        }
+
+        .score {
+            font-size: 38px;
+            font-weight: 800;
+            color: #2563eb;
+        }
+
+        #historyList {
+            display: grid;
+            grid-template-rows: repeat(10, minmax(58px, 1fr));
+            gap: 8px;
+            min-height: calc(100vh - 232px);
+        }
+
+        .history-card {
+            position: relative;
+            min-height: 58px;
+            padding: 10px 118px 9px 12px;
+            border: 1px solid #e8edf5;
+            border-radius: 16px;
+            background: #fbfdff;
+            cursor: pointer;
+            transition: 0.16s ease;
+            overflow: hidden;
+        }
+
+        .history-card:hover {
+            transform: translateY(-1px);
+            border-color: #bfd2ff;
+            box-shadow: 0 10px 24px rgba(37, 99, 235, 0.08);
+        }
+
+        .history-card h3 {
+            margin-bottom: 5px;
+            padding-right: 6px;
+            font-size: 15px;
+            line-height: 1.25;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .history-score-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 3px;
+        }
+
+        .history-score {
+            font-size: 18px;
+            font-weight: 800;
+            color: #2563eb;
+            white-space: nowrap;
+        }
+
+        .history-status {
+            padding: 2px 7px;
+            border-radius: 999px;
+            background: #eef6ff;
+            color: #2563eb;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .history-actions {
+            position: absolute;
+            top: 9px;
+            right: 9px;
+            display: flex;
+            gap: 6px;
+            margin: 0;
+        }
+
+        .history-actions button {
+            width: 28px;
+            height: 28px;
+            min-width: 0;
+            padding: 0;
+            border-radius: 10px;
+            font-size: 12px;
+        }
+
+        .history-actions button.continue {
+            width: auto;
+            min-width: 58px;
+            padding: 0 9px;
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .pagination button {
+            min-width: 82px;
+        }
+
+        .history-card.active {
+            border-color: #2563eb;
+            background: linear-gradient(135deg, #eff6ff 0%, #f8fbff 100%);
+            box-shadow: 0 10px 24px rgba(37, 99, 235, 0.10);
+        }
+
+        .meta {
+            color: #68758f;
+            font-size: 13px;
+            line-height: 1.35;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .stat {
+            padding: 12px;
+            background: #f8fbff;
+            border-radius: 14px;
+        }
+
+        .question-card {
+            padding: 16px;
+            border: 1px solid #e5eaf3;
+            border-radius: 16px;
+            margin-top: 14px;
+            background: #fff;
+        }
+
+        .question-tabs {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin: 12px 0 16px;
+        }
+
+        .question-tab {
+            padding: 14px 10px;
+            border: 1px solid #e5eaf3;
+            border-radius: 14px;
+            background: #fbfdff;
+            cursor: pointer;
+            transition: 0.15s ease;
+        }
+
+        .question-tab:hover {
+            border-color: #93c5fd;
+            background: #eff6ff;
+        }
+
+        .question-tab.active {
+            border-color: #2563eb;
+            background: #eff6ff;
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.12);
+        }
+
+        .question-tab-title {
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .question-tab-score {
+            font-size: 24px;
+            font-weight: 800;
+            color: #2563eb;
+        }
+
+        .question-title {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 10px;
+            font-weight: 800;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 4px 9px;
+            border-radius: 999px;
+            background: #eef2ff;
+            color: #1e40af;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        .answer-block {
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 12px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+        }
+
+        .collapsible-text {
+            position: relative;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            cursor: pointer;
+        }
+
+        .collapsible-text.collapsed {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            padding-right: 132px;
+        }
+
+        .collapsible-text.collapsed::after {
+            content: "。。。点击查看全部";
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            padding-left: 22px;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0), #fff 18%);
+            color: #2563eb;
+            font-weight: 700;
+        }
+
+        .collapsible-text.expanded::after {
+            content: "点击收起";
+            display: inline-block;
+            margin-left: 10px;
+            color: #2563eb;
+            font-weight: 700;
+        }
+
+        .reanswer-box {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f8fafc;
+            border-radius: 12px;
+        }
+
+        .reanswer-box button {
+            margin-top: 10px;
+            margin-right: 8px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .empty {
+            padding: 28px;
+            text-align: center;
+            color: #68758f;
+        }
+
+    </style>
+</head>
+<body>
+<main class="app">
+    <div class="topbar">
+        <div>
+            <h1>历史面试记录</h1>
+            <p class="muted">查看每次面试的总分、每题标准答案、你的回答和 AI 建议，也可以对单题重新回答。</p>
+        </div>
+        <button class="ghost" onclick="location.href='/'">返回面试首页</button>
+    </div>
+
+    <div class="layout">
+        <section class="card panel">
+            <h2>面试列表</h2>
+            <p id="historyPageInfo" class="muted">按创建时间倒序展示，每页 10 条。</p>
+            <div id="historyList"></div>
+            <div id="historyPagination" class="pagination hidden">
+                <button class="ghost" onclick="changeHistoryPage(-1)">上一页</button>
+                <span id="historyPageText" class="muted"></span>
+                <button class="ghost" onclick="changeHistoryPage(1)">下一页</button>
+            </div>
+        </section>
+
+        <section class="card panel detail-card">
+            <div id="detailEmpty" class="empty">请选择左侧一条历史记录查看详情。</div>
+            <div id="detailPanel" class="hidden">
+                <h2 id="detailTitle">面试详情</h2>
+                <div class="summary-grid">
+                    <div class="stat">
+                        <div class="muted">总分</div>
+                        <div><span id="totalScore" class="score">0</span> / 100</div>
+                    </div>
+                    <div class="stat">
+                        <div class="muted">状态</div>
+                        <h3 id="statusText">-</h3>
+                    </div>
+                    <div class="stat">
+                        <div class="muted">开始时间</div>
+                        <h3 id="createdAtText">-</h3>
+                    </div>
+                </div>
+
+                <h3>整体评价</h3>
+                <p id="overallComment"></p>
+                <h3>提升建议</h3>
+                <p id="improvementAdvice" class="collapsible-text collapsed" onclick="toggleCollapsibleText(this)"></p>
+
+                <h3>每题明细</h3>
+                <div id="questionTabs" class="question-tabs"></div>
+                <div id="selectedQuestionDetail"></div>
+            </div>
+        </section>
+    </div>
+</main>
+
+<script>
+    let currentHistoryInterviewId = null;
+    let currentHistoryDetail = null;
+    let selectedQuestionId = null;
+    let currentHistoryPage = 1;
+    const historyPageSize = 10;
+
+    window.addEventListener("DOMContentLoaded", loadHistory);
+
+    async function request(url, options = {}) {
+        const response = await fetch(url, {
+            headers: {"Content-Type": "application/json"},
+            ...options
+        });
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || "请求失败");
+        }
+        return data;
+    }
+
+    async function loadHistory() {
+        try {
+            const data = await request(`/api/interview/history?page=${currentHistoryPage}&size=${historyPageSize}`);
+            if (!data.records.length && data.total > 0 && currentHistoryPage > 1) {
+                currentHistoryPage = data.totalPages;
+                await loadHistory();
+                return;
+            }
+            renderHistoryList(data.records);
+            renderPagination(data);
+            if (data.records.length) {
+                await loadHistoryDetail(data.records[0].interviewId);
+            } else {
+                clearDetailPanel("暂无历史面试记录。");
+            }
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    function renderHistoryList(items) {
+        const list = document.getElementById("historyList");
+        list.innerHTML = "";
+        if (!items.length) {
+            list.innerHTML = `<div class="empty">暂无历史面试记录。</div>`;
+            return;
+        }
+
+        items.forEach(item => {
+            const div = document.createElement("div");
+            div.id = `historyItem-${item.interviewId}`;
+            div.className = "history-card";
+            div.title = `${item.positionType}｜${item.totalScore || 0}分｜${formatStatus(item.status)}`;
+            div.onclick = () => loadHistoryDetail(item.interviewId);
+            const continueButton = item.status === "RUNNING"
+                ? `<button class="continue" title="继续面试" onclick="continueInterview(event, ${item.interviewId})">继续</button>`
+                : "";
+            div.innerHTML = `
+                <h3>${escapeHtml(item.positionType)}</h3>
+                <div class="history-score-row">
+                    <span class="history-score">${item.totalScore || 0} 分</span>
+                    <span class="history-status">${formatStatus(item.status)}</span>
+                </div>
+                <div class="meta">
+                    ${formatTime(item.createdAt)} · ${formatTime(item.finishedAt)}
+                </div>
+                <div class="history-actions">
+                    ${continueButton}
+                    <button class="danger" title="删除" onclick="deleteHistory(event, ${item.interviewId})">×</button>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+    }
+
+    function continueInterview(event, interviewId) {
+        event.stopPropagation();
+        location.href = `/?continueInterviewId=${interviewId}`;
+    }
+
+    function renderPagination(pageData) {
+        const pagination = document.getElementById("historyPagination");
+        const pageText = document.getElementById("historyPageText");
+        const pageInfo = document.getElementById("historyPageInfo");
+        if (!pageData.total) {
+            pagination.classList.add("hidden");
+            pageInfo.innerText = "暂无历史面试记录。";
+            return;
+        }
+        pagination.classList.toggle("hidden", pageData.totalPages <= 1);
+        pageText.innerText = `第 ${pageData.page} / ${pageData.totalPages} 页，共 ${pageData.total} 条`;
+        pageInfo.innerText = `按创建时间倒序展示，每页 ${pageData.size} 条，共 ${pageData.total} 条。`;
+        pagination.querySelector("button:first-child").disabled = pageData.page <= 1;
+        pagination.querySelector("button:last-child").disabled = pageData.page >= pageData.totalPages;
+    }
+
+    async function changeHistoryPage(delta) {
+        currentHistoryPage = Math.max(1, currentHistoryPage + delta);
+        await loadHistory();
+    }
+
+    async function loadHistoryDetail(interviewId) {
+        try {
+            currentHistoryInterviewId = interviewId;
+            const data = await request(`/api/interview/history/${interviewId}`);
+            renderHistoryDetail(data);
+            document.querySelectorAll(".history-card").forEach(item => item.classList.remove("active"));
+            const active = document.getElementById(`historyItem-${interviewId}`);
+            if (active) {
+                active.classList.add("active");
+            }
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    async function deleteHistory(event, interviewId) {
+        event.stopPropagation();
+        const confirmed = confirm("确认要物理删除这条历史面试记录吗？删除后不可恢复。");
+        if (!confirmed) {
+            return;
+        }
+        try {
+            const response = await fetch(`/api/interview/history/${interviewId}`, {method: "DELETE"});
+            if (!response.ok) {
+                throw new Error("删除失败");
+            }
+            if (currentHistoryInterviewId === interviewId) {
+                clearDetailPanel("请选择左侧一条历史记录查看详情。");
+            }
+            await loadHistory();
+        } catch (error) {
+            alert(error.message || "删除失败");
+        }
+    }
+
+    function clearDetailPanel(message) {
+        currentHistoryInterviewId = null;
+        currentHistoryDetail = null;
+        selectedQuestionId = null;
+        document.getElementById("detailPanel").classList.add("hidden");
+        document.getElementById("detailEmpty").classList.remove("hidden");
+        document.getElementById("detailEmpty").innerText = message;
+    }
+
+    function renderHistoryDetail(data) {
+        document.getElementById("detailEmpty").classList.add("hidden");
+        document.getElementById("detailPanel").classList.remove("hidden");
+        document.getElementById("detailTitle").innerText = data.positionType;
+        document.getElementById("totalScore").innerText = data.totalScore || 0;
+        document.getElementById("statusText").innerText = formatStatus(data.status);
+        document.getElementById("createdAtText").innerText = formatTime(data.createdAt);
+        document.getElementById("overallComment").innerText = data.overallComment || "暂无整体评价";
+        const improvementAdvice = document.getElementById("improvementAdvice");
+        improvementAdvice.innerText = data.improvementAdvice || "暂无提升建议";
+        improvementAdvice.classList.add("collapsed");
+        improvementAdvice.classList.remove("expanded");
+
+        const previousSelectedQuestionId = selectedQuestionId;
+        currentHistoryDetail = data;
+        selectedQuestionId = data.questions.some(question => question.questionId === previousSelectedQuestionId)
+            ? previousSelectedQuestionId
+            : (data.questions.length ? data.questions[0].questionId : null);
+        renderQuestionTabs();
+        renderSelectedQuestionDetail();
+    }
+
+    function renderQuestionTabs() {
+        const tabs = document.getElementById("questionTabs");
+        tabs.innerHTML = "";
+        if (!currentHistoryDetail || !currentHistoryDetail.questions.length) {
+            tabs.innerHTML = `<div class="empty">暂无题目明细。</div>`;
+            return;
+        }
+
+        currentHistoryDetail.questions.forEach(item => {
+            const div = document.createElement("div");
+            div.className = `question-tab ${item.questionId === selectedQuestionId ? "active" : ""}`;
+            div.onclick = () => selectQuestion(item.questionId);
+            div.innerHTML = `
+                <div class="question-tab-title">第 ${item.questionIndex} 题</div>
+                <div class="muted">${formatQuestionType(item.questionType)}</div>
+                <div class="question-tab-score">${item.score}<span class="muted"> / 20</span></div>
+            `;
+            tabs.appendChild(div);
+        });
+    }
+
+    function selectQuestion(questionId) {
+        selectedQuestionId = questionId;
+        renderQuestionTabs();
+        renderSelectedQuestionDetail();
+    }
+
+    function renderSelectedQuestionDetail() {
+        const detail = document.getElementById("selectedQuestionDetail");
+        detail.innerHTML = "";
+        if (!currentHistoryDetail || !selectedQuestionId) {
+            return;
+        }
+
+        const item = currentHistoryDetail.questions.find(question => question.questionId === selectedQuestionId);
+        if (!item) {
+            return;
+        }
+
+        const div = document.createElement("div");
+        div.className = "question-card";
+        div.innerHTML = `
+            <div class="question-title">
+                <span>第 ${item.questionIndex} 题：${item.score} / 20</span>
+                <span class="tag">${formatQuestionType(item.questionType)}</span>
+            </div>
+            <p><b>题目：</b>${escapeHtml(item.questionContent)}</p>
+            <div class="answer-block"><b>标准答案：</b><br>${escapeHtml(item.referenceAnswer)}</div>
+            <div class="answer-block"><b>你的回答：</b><br>${escapeHtml(item.userAnswer)}</div>
+            <p><b>本题总结：</b>${escapeHtml(item.answerSummary)}</p>
+            <p><b>AI点评：</b>${escapeHtml(item.aiComment)}</p>
+            <p><b>改进建议：</b>${escapeHtml(item.suggestion)}</p>
+            <button class="secondary" onclick="showReAnswerEditor(${item.questionId})">重新回答这道题</button>
+            <div id="reanswerBox-${item.questionId}" class="reanswer-box hidden">
+                <textarea id="reanswerText-${item.questionId}" placeholder="请输入这道题的新答案，提交后系统会重新评分。">${escapeHtml(item.userAnswer)}</textarea>
+                <button onclick="submitReAnswer(${item.questionId})">提交重新评分</button>
+                <button class="ghost" onclick="cancelReAnswer(${item.questionId})">取消</button>
+            </div>
+        `;
+        detail.appendChild(div);
+    }
+
+    function toggleCollapsibleText(element) {
+        element.classList.toggle("collapsed");
+        element.classList.toggle("expanded");
+    }
+
+    function showReAnswerEditor(questionId) {
+        document.getElementById(`reanswerBox-${questionId}`).classList.remove("hidden");
+    }
+
+    function cancelReAnswer(questionId) {
+        document.getElementById(`reanswerBox-${questionId}`).classList.add("hidden");
+    }
+
+    async function submitReAnswer(questionId) {
+        const textarea = document.getElementById(`reanswerText-${questionId}`);
+        const userAnswer = textarea.value.trim();
+        if (!userAnswer) {
+            alert("请先输入新的答案");
+            return;
+        }
+        try {
+            const data = await request(`/api/interview/${currentHistoryInterviewId}/questions/${questionId}/answer`, {
+                method: "PUT",
+                body: JSON.stringify({userAnswer})
+            });
+            alert(`重新评分成功，本题 ${data.score} / 20，总分已更新为 ${data.totalScore} / 100`);
+            selectedQuestionId = questionId;
+            await loadHistoryDetail(currentHistoryInterviewId);
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    function formatStatus(status) {
+        return status === "FINISHED" ? "已完成" : "进行中";
+    }
+
+    function formatQuestionType(type) {
+        const mapping = {
+            BASIC: "Java基础八股",
+            CONCURRENCY: "JVM/并发八股",
+            MIDDLEWARE: "数据库/缓存/中间件",
+            PROJECT: "项目实战",
+            ARCHITECTURE: "架构设计"
+        };
+        return mapping[type] || "未分类";
+    }
+
+    function formatTime(value) {
+        if (!value) {
+            return "-";
+        }
+        return String(value).replace("T", " ").substring(0, 19);
+    }
+
+    function escapeHtml(value) {
+        return String(value || "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll("\"", "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+</script>
+</body>
+</html>
