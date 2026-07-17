@@ -1,5 +1,6 @@
 package com.example.aiinterview.controller;
 
+import com.example.aiinterview.common.Result;
 import com.example.aiinterview.dto.QuickReviewAnswerRequest;
 import com.example.aiinterview.dto.QuickReviewPaperDetailResponse;
 import com.example.aiinterview.dto.QuickReviewPaperSummaryResponse;
@@ -30,35 +31,33 @@ public class QuickReviewController {
     }
 
     @PostMapping("/start")
-    public QuickReviewStartResponse start() {
-        return quickReviewService.start();
+    public Result<QuickReviewStartResponse> start() {
+        return Result.ok(quickReviewService.start());
     }
 
-    // 保留单题评分接口用于兼容旧页面或调试，当前页面主流程使用整卷提交。
     @PostMapping("/score")
-    public QuickReviewScoreResponse score(@Valid @RequestBody QuickReviewAnswerRequest request) {
-        return quickReviewService.score(
+    public Result<QuickReviewScoreResponse> score(@Valid @RequestBody QuickReviewAnswerRequest request) {
+        return Result.ok(quickReviewService.score(
                 request.questionContent(),
                 request.referenceAnswer(),
                 request.userAnswer()
-        );
+        ));
     }
 
-    // 填空题训练按试卷整体提交，后端统一统计总分和每题反馈。
     @PostMapping("/{paperId}/submit")
-    public QuickReviewSubmitResponse submit(@PathVariable Long paperId,
-                                            @Valid @RequestBody QuickReviewSubmitRequest request) {
-        return quickReviewService.submit(paperId, request);
+    public Result<QuickReviewSubmitResponse> submit(@PathVariable Long paperId,
+                                                    @Valid @RequestBody QuickReviewSubmitRequest request) {
+        return Result.ok(quickReviewService.submit(paperId, request));
     }
 
     @GetMapping("/history")
-    public List<QuickReviewPaperSummaryResponse> history(@RequestParam(defaultValue = "1") int page,
-                                                         @RequestParam(defaultValue = "20") int size) {
-        return quickReviewService.listHistory(page, size);
+    public Result<List<QuickReviewPaperSummaryResponse>> history(@RequestParam(defaultValue = "1") int page,
+                                                                 @RequestParam(defaultValue = "20") int size) {
+        return Result.ok(quickReviewService.listHistory(page, size));
     }
 
     @GetMapping("/history/{paperId}")
-    public QuickReviewPaperDetailResponse historyDetail(@PathVariable Long paperId) {
-        return quickReviewService.getHistoryDetail(paperId);
+    public Result<QuickReviewPaperDetailResponse> historyDetail(@PathVariable Long paperId) {
+        return Result.ok(quickReviewService.getHistoryDetail(paperId));
     }
 }

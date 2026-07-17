@@ -1,5 +1,6 @@
 package com.example.aiinterview.controller;
 
+import com.example.aiinterview.common.Result;
 import com.example.aiinterview.dto.InterviewDirectionRequest;
 import com.example.aiinterview.dto.InterviewDirectionResponse;
 import com.example.aiinterview.service.InterviewDirectionService;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
+@RequestMapping("/api/interview-directions")
 public class InterviewDirectionController {
 
     private final InterviewDirectionService directionService;
@@ -25,34 +27,36 @@ public class InterviewDirectionController {
         this.directionService = directionService;
     }
 
-    @GetMapping("/api/interview-directions/tree")
-    public List<InterviewDirectionResponse> enabledTree() {
-        return directionService.enabledTree();
+    @GetMapping("/tree")
+    public Result<List<InterviewDirectionResponse>> enabledTree() {
+        return Result.ok(directionService.enabledTree());
     }
 
-    @GetMapping("/api/admin/interview-directions/tree")
-    public List<InterviewDirectionResponse> adminTree() {
-        return directionService.adminTree();
+    @GetMapping("/admin/tree")
+    public Result<List<InterviewDirectionResponse>> adminTree() {
+        return Result.ok(directionService.adminTree());
     }
 
-    @PostMapping("/api/admin/interview-directions")
-    public InterviewDirectionResponse create(@Valid @RequestBody InterviewDirectionRequest request) {
-        return directionService.create(request);
+    @PostMapping("/admin")
+    public Result<InterviewDirectionResponse> create(@Valid @RequestBody InterviewDirectionRequest request) {
+        return Result.ok(directionService.create(request));
     }
 
-    @PutMapping("/api/admin/interview-directions/{id}")
-    public InterviewDirectionResponse update(@PathVariable Long id,
-                                             @Valid @RequestBody InterviewDirectionRequest request) {
-        return directionService.update(id, request);
+    @PutMapping("/admin/{id}")
+    public Result<InterviewDirectionResponse> update(@PathVariable Long id,
+                                                     @Valid @RequestBody InterviewDirectionRequest request) {
+        return Result.ok(directionService.update(id, request));
     }
 
-    @PutMapping("/api/admin/interview-directions/{id}/enabled")
-    public void updateEnabled(@PathVariable Long id, @RequestParam boolean enabled) {
+    @PutMapping("/admin/{id}/enabled")
+    public Result<Void> updateEnabled(@PathVariable Long id, @RequestParam boolean enabled) {
         directionService.updateEnabled(id, enabled);
+        return Result.ok(null);
     }
 
-    @DeleteMapping("/api/admin/interview-directions/{id}")
-    public void disable(@PathVariable Long id) {
+    @DeleteMapping("/admin/{id}")
+    public Result<Void> disable(@PathVariable Long id) {
         directionService.disable(id);
+        return Result.ok(null);
     }
 }

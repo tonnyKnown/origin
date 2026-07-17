@@ -1,5 +1,6 @@
 package com.example.aiinterview.controller;
 
+import com.example.aiinterview.common.Result;
 import com.example.aiinterview.dto.AnswerScoreResponse;
 import com.example.aiinterview.dto.InterviewHistoryDetailResponse;
 import com.example.aiinterview.dto.InterviewHistoryItemResponse;
@@ -27,65 +28,67 @@ public class InterviewController {
     }
 
     @PostMapping("/start")
-    public QuestionResponse start(@Valid @RequestBody StartInterviewRequest request) {
+    public Result<QuestionResponse> start(@Valid @RequestBody StartInterviewRequest request) {
         if (request.directionId() != null) {
-            return interviewService.startByDirection(request.directionId());
+            return Result.ok(interviewService.startByDirection(request.directionId()));
         }
-        return interviewService.start(request.positionType());
+        return Result.ok(interviewService.start(request.positionType()));
     }
 
     @PostMapping("/review/start")
-    public QuestionResponse startReview() {
-        return interviewService.startReview();
+    public Result<QuestionResponse> startReview() {
+        return Result.ok(interviewService.startReview());
     }
 
     @PostMapping("/{interviewId}/answer")
-    public AnswerScoreResponse submitAnswer(@PathVariable Long interviewId,
-                                            @Valid @RequestBody SubmitAnswerRequest request) {
-        return interviewService.submitAnswer(interviewId, request.questionId(), request.userAnswer());
+    public Result<AnswerScoreResponse> submitAnswer(@PathVariable Long interviewId,
+                                                     @Valid @RequestBody SubmitAnswerRequest request) {
+        return Result.ok(interviewService.submitAnswer(interviewId, request.questionId(), request.userAnswer()));
     }
 
     @PostMapping("/{interviewId}/next")
-    public QuestionResponse nextQuestion(@PathVariable Long interviewId) {
-        return interviewService.nextQuestion(interviewId);
+    public Result<QuestionResponse> nextQuestion(@PathVariable Long interviewId) {
+        return Result.ok(interviewService.nextQuestion(interviewId));
     }
 
     @PostMapping("/{interviewId}/continue")
-    public QuestionResponse continueInterview(@PathVariable Long interviewId) {
-        return interviewService.continueInterview(interviewId);
+    public Result<QuestionResponse> continueInterview(@PathVariable Long interviewId) {
+        return Result.ok(interviewService.continueInterview(interviewId));
     }
 
     @PostMapping("/{interviewId}/cancel")
-    public void cancelInterview(@PathVariable Long interviewId) {
+    public Result<Void> cancelInterview(@PathVariable Long interviewId) {
         interviewService.cancelInterview(interviewId);
+        return Result.ok(null);
     }
 
     @GetMapping("/{interviewId}/summary")
-    public SummaryResponse summary(@PathVariable Long interviewId) {
-        return interviewService.summary(interviewId);
+    public Result<SummaryResponse> summary(@PathVariable Long interviewId) {
+        return Result.ok(interviewService.summary(interviewId));
     }
 
     @GetMapping("/history")
-    public InterviewHistoryPageResponse history(@RequestParam(defaultValue = "1") int page,
-                                                @RequestParam(defaultValue = "10") int size,
-                                                @RequestParam(required = false) String direction) {
-        return interviewService.historyPage(page, size, direction);
+    public Result<InterviewHistoryPageResponse> history(@RequestParam(defaultValue = "1") int page,
+                                                        @RequestParam(defaultValue = "10") int size,
+                                                        @RequestParam(required = false) String direction) {
+        return Result.ok(interviewService.historyPage(page, size, direction));
     }
 
     @GetMapping("/history/{interviewId}")
-    public InterviewHistoryDetailResponse historyDetail(@PathVariable Long interviewId) {
-        return interviewService.historyDetail(interviewId);
+    public Result<InterviewHistoryDetailResponse> historyDetail(@PathVariable Long interviewId) {
+        return Result.ok(interviewService.historyDetail(interviewId));
     }
 
     @PutMapping("/{interviewId}/questions/{questionId}/answer")
-    public ReAnswerResponse reAnswer(@PathVariable Long interviewId,
-                                     @PathVariable Long questionId,
-                                     @Valid @RequestBody ReAnswerRequest request) {
-        return interviewService.reAnswer(interviewId, questionId, request.userAnswer());
+    public Result<ReAnswerResponse> reAnswer(@PathVariable Long interviewId,
+                                              @PathVariable Long questionId,
+                                              @Valid @RequestBody ReAnswerRequest request) {
+        return Result.ok(interviewService.reAnswer(interviewId, questionId, request.userAnswer()));
     }
 
     @DeleteMapping("/history/{interviewId}")
-    public void deleteHistory(@PathVariable Long interviewId) {
+    public Result<Void> deleteHistory(@PathVariable Long interviewId) {
         interviewService.deleteHistory(interviewId);
+        return Result.ok(null);
     }
 }

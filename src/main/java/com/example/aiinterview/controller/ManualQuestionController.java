@@ -1,5 +1,6 @@
 package com.example.aiinterview.controller;
 
+import com.example.aiinterview.common.Result;
 import com.example.aiinterview.dto.ManualQuestionRequest;
 import com.example.aiinterview.dto.ManualQuestionPageResponse;
 import com.example.aiinterview.dto.ManualQuestionResponse;
@@ -28,38 +29,44 @@ public class ManualQuestionController {
     }
 
     @PostMapping
-    public ManualQuestionResponse create(@Valid @RequestBody ManualQuestionRequest request) {
-        return manualQuestionService.create(request.questionContent());
+    public Result<ManualQuestionResponse> create(@Valid @RequestBody ManualQuestionRequest request) {
+        return Result.ok(manualQuestionService.create(request.questionContent()));
     }
 
     @GetMapping
-    public ManualQuestionPageResponse list(@RequestParam(defaultValue = "1") int page,
-                                           @RequestParam(defaultValue = "10") int size,
-                                           @RequestParam(defaultValue = "") String keyword,
-                                           @RequestParam(defaultValue = "") String understandingLevel) {
-        return manualQuestionService.page(page, size, keyword, understandingLevel);
+    public Result<ManualQuestionPageResponse> list(@RequestParam(defaultValue = "1") int page,
+                                                   @RequestParam(defaultValue = "10") int size,
+                                                   @RequestParam(defaultValue = "") String keyword,
+                                                   @RequestParam(defaultValue = "") String understandingLevel) {
+        return Result.ok(manualQuestionService.page(page, size, keyword, understandingLevel));
     }
 
     @PostMapping("/{id}/answer")
-    public ManualQuestionResponse answer(@PathVariable Long id) {
-        return manualQuestionService.answer(id);
+    public Result<ManualQuestionResponse> answer(@PathVariable Long id) {
+        return Result.ok(manualQuestionService.answer(id));
     }
 
     @PutMapping("/{id}/remark")
-    public ManualQuestionResponse updateManualRemark(@PathVariable Long id,
-                                                     @Valid @RequestBody ManualRemarkRequest request) {
-        return manualQuestionService.updateManualRemark(id, request.manualRemark());
+    public Result<ManualQuestionResponse> updateManualRemark(@PathVariable Long id,
+                                                             @Valid @RequestBody ManualRemarkRequest request) {
+        return Result.ok(manualQuestionService.updateManualRemark(id, request.manualRemark()));
     }
 
     @PostMapping("/{id}/self-test")
-    public ManualQuestionResponse selfTest(@PathVariable Long id,
-                                           @Valid @RequestBody ManualSelfTestRequest request) {
-        return manualQuestionService.selfTest(id, request.userAnswer());
+    public Result<ManualQuestionResponse> selfTest(@PathVariable Long id,
+                                                   @Valid @RequestBody ManualSelfTestRequest request) {
+        return Result.ok(manualQuestionService.selfTest(id, request.userAnswer()));
     }
 
     @PutMapping("/{id}/tag")
-    public ManualQuestionResponse updateTag(@PathVariable Long id,
-                                            @Valid @RequestBody ManualQuestionTagRequest request) {
-        return manualQuestionService.updateUnderstandingLevel(id, request.understandingLevel());
+    public Result<ManualQuestionResponse> updateTag(@PathVariable Long id,
+                                                    @Valid @RequestBody ManualQuestionTagRequest request) {
+        return Result.ok(manualQuestionService.updateUnderstandingLevel(id, request.understandingLevel()));
+    }
+
+    @PutMapping("/{id}/content")
+    public Result<ManualQuestionResponse> updateContent(@PathVariable Long id,
+                                                        @Valid @RequestBody ManualQuestionRequest request) {
+        return Result.ok(manualQuestionService.updateQuestionContent(id, request.questionContent()));
     }
 }

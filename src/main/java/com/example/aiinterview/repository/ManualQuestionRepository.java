@@ -134,4 +134,13 @@ public interface ManualQuestionRepository {
             """)
     int updateUnderstandingLevel(@Param("id") Long id,
                                  @Param("understandingLevel") String understandingLevel);
+
+    @Update("""
+            UPDATE manual_question
+            SET question_content = #{questionContent},
+                updated_at = NOW()
+            WHERE id = #{id}
+            """)
+    int updateQuestionContent(@Param("id") Long id,
+                              @Param("questionContent") String questionContent);
 }

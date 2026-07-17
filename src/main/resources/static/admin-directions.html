@@ -90,7 +90,7 @@
             <textarea id="description" placeholder="用于说明该方向覆盖的岗位和能力范围"></textarea>
 
             <div class="button-row">
-                <button onclick="saveDirection()">保存</button>
+                <button id="saveButton" onclick="saveDirection()">保存</button>
                 <button class="secondary" onclick="showCreateForm()">新增</button>
                 <button class="danger" onclick="disableDirection()">禁用所选</button>
                 <button class="secondary" onclick="hideForm()">取消</button>
@@ -105,6 +105,7 @@
     let expandedIds = new Set();
     let selectedDirectionId = null;
     let treeInitialized = false;
+    let savingDirection = false;
 
     window.addEventListener("DOMContentLoaded", loadTree);
 
@@ -113,18 +114,18 @@
             headers: {"Content-Type": "application/json"},
             ...options
         });
-        if (!response.ok) {
-            const data = await response.json().catch(() => ({}));
-            throw new Error(data.message || "请求失败");
-        }
         if (response.status === 204) {
             return null;
         }
-        return response.json().catch(() => null);
+        const result = await response.json().catch(() => ({code: 500, message: "解析失败"}));
+        if (!response.ok || result.code !== 200) {
+            throw new Error(result.message || "请求失败");
+        }
+        return result.data;
     }
 
     async function loadTree() {
-        directionTree = await request("/api/admin/interview-directions/tree");
+        directionTree = await request("/api/interview-directions/admin/tree");
         flatDirections = flatten(directionTree);
         if (!treeInitialized) {
             directionTree.forEach(node => expandedIds.add(node.id));
@@ -146,7 +147,7 @@
         const tree = document.getElementById("tree");
         tree.innerHTML = "";
         if (directionTree.length === 0) {
-            tree.innerHTML = `<div class="empty-state">暂无面试方向，点击右侧表单新增顶层赛道。</div>`;
+            tree.innerHTML = `<div class="empty-state">暂无面试方向，点击“新增方向”创建顶层赛道。</div>`;
             return;
         }
         directionTree.forEach(item => tree.appendChild(renderNode(item)));
@@ -198,6 +199,17 @@
         const actions = document.createElement("div");
         actions.className = "tree-actions";
         actions.appendChild(count);
+        if (item.level < 3) {
+            const childButton = document.createElement("button");
+            childButton.type = "button";
+            childButton.className = "tree-edit";
+            childButton.textContent = "新增子方向";
+            childButton.onclick = event => {
+                event.stopPropagation();
+                showCreateForm(item);
+            };
+            actions.appendChild(childButton);
+        }
         actions.appendChild(editButton);
 
         row.appendChild(toggle);
@@ -282,8 +294,13 @@
         document.getElementById("description").value = item.description || "";
     }
 
-    function showCreateForm() {
+    function showCreateForm(parentItem = null) {
         resetForm();
+        if (parentItem) {
+            selectedDirectionId = parentItem.id;
+            document.getElementById("parentId").value = parentItem.id;
+            renderTree();
+        }
         showForm();
     }
 
@@ -294,6 +311,10 @@
 
     function hideForm() {
         resetForm();
+        closeForm();
+    }
+
+    function closeForm() {
         document.getElementById("directionForm").classList.add("hidden");
         document.getElementById("pageLayout").classList.remove("editing");
     }
@@ -312,6 +333,9 @@
     }
 
     async function saveDirection() {
+        if (savingDirection) {
+            return;
+        }
         const id = document.getElementById("directionId").value;
         const payload = {
             parentId: toNullableNumber(document.getElementById("parentId").value),
@@ -325,21 +349,34 @@
             return;
         }
         try {
+            savingDirection = true;
+            document.getElementById("saveButton").disabled = true;
+            let savedDirection;
             if (id) {
-                await request(`/api/admin/interview-directions/${id}`, {
+                savedDirection = await request(`/api/interview-directions/admin/${id}`, {
                     method: "PUT",
                     body: JSON.stringify(payload)
                 });
             } else {
-                await request("/api/admin/interview-directions", {
+                savedDirection = await request("/api/interview-directions/admin", {
                     method: "POST",
                     body: JSON.stringify(payload)
                 });
             }
-            hideForm();
+            selectedDirectionId = savedDirection?.id || Number(id);
+            if (payload.parentId) {
+                expandPath(payload.parentId);
+                expandedIds.add(payload.parentId);
+            } else if (selectedDirectionId) {
+                expandPath(selectedDirectionId);
+            }
+            closeForm();
             await loadTree();
         } catch (error) {
             alert(error.message);
+        } finally {
+            savingDirection = false;
+            document.getElementById("saveButton").disabled = false;
         }
     }
 
@@ -350,7 +387,7 @@
             return;
         }
         try {
-            await request(`/api/admin/interview-directions/${id}`, {method: "DELETE"});
+            await request(`/api/interview-directions/admin/${id}`, {method: "DELETE"});
             hideForm();
             await loadTree();
         } catch (error) {

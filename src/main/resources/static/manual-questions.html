@@ -30,6 +30,38 @@
             gap: 12px;
         }
 
+        .question-content-editor-wrapper {
+            padding: 12px;
+            border: 1px dashed #d0d7de;
+            border-radius: 12px;
+            background: #f8fafc;
+            display: grid;
+            gap: 10px;
+        }
+
+        .question-content-editor-wrapper.hidden {
+            display: none;
+        }
+
+        .question-content-editor {
+            width: 100%;
+            min-height: 80px;
+            padding: 10px;
+            border: 1px solid #d0d7de;
+            border-radius: 8px;
+            font-size: 15px;
+            line-height: 1.65;
+            resize: vertical;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .question-content-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
         .question-head {
             display: grid;
             grid-template-columns: 1fr;
@@ -182,11 +214,11 @@
             headers: {"Content-Type": "application/json"},
             ...options
         });
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(data.message || "请求失败");
+        const result = await response.json().catch(() => ({code: 500, message: "解析失败"}));
+        if (!response.ok || result.code !== 200) {
+            throw new Error(result.message || "请求失败");
         }
-        return data;
+        return result.data;
     }
 
     async function saveQuestion() {
@@ -268,7 +300,7 @@
                 <div class="question-head">
                     <div>
                         <p class="question-text">
-                            <b>问题：</b><span class="question-content">${escapeHtml(item.questionContent)}</span>
+                            <b>问题：</b><span id="questionContentText-${item.id}" class="question-content">${escapeHtml(item.questionContent)}</span>
                             <span class="level-badge ${levelClass(item.understandingLevel)}">${formatUnderstandingLevel(item.understandingLevel)}</span>
                         </p>
                         <p class="muted">
@@ -279,6 +311,7 @@
                         </p>
                     </div>
                     <div class="card-actions">
+                        <button class="secondary" onclick="showQuestionContentEditor(event, ${item.id})">编辑问题</button>
                         <select class="tag-select" onclick="event.stopPropagation()" onchange="updateQuestionTag(event, ${item.id})">
                             <option value="HIGH" ${item.understandingLevel === "HIGH" ? "selected" : ""}>高（不理解）</option>
                             <option value="MEDIUM" ${item.understandingLevel === "MEDIUM" ? "selected" : ""}>中（半知半解）</option>
@@ -287,6 +320,13 @@
                         <button id="answerBtn-${item.id}" onclick="answerQuestion(event, ${item.id})">${item.aiAnswer ? "重新回答" : "AI简答"}</button>
                         <button class="secondary" onclick="showRemarkEditor(event, ${item.id})">${item.manualRemark ? "修改备注" : "备注"}</button>
                         <button class="secondary" onclick="showSelfTestEditor(event, ${item.id})">自测评分</button>
+                    </div>
+                </div>
+                <div id="questionContentEditor-${item.id}" class="question-content-editor-wrapper hidden" onclick="event.stopPropagation()">
+                    <textarea id="questionContentInput-${item.id}" class="question-content-editor" placeholder="请输入问题内容">${escapeHtml(item.questionContent)}</textarea>
+                    <div class="question-content-actions">
+                        <button onclick="saveQuestionContent(event, ${item.id})">保存修改</button>
+                        <button class="secondary" onclick="cancelQuestionContentEditor(event, ${item.id})">取消</button>
                     </div>
                 </div>
                 ${(item.aiAnswer || item.manualRemark || item.selfTestScore != null) ? `
@@ -400,6 +440,37 @@
             await request(`/api/manual-questions/${id}/tag`, {
                 method: "PUT",
                 body: JSON.stringify({understandingLevel: event.target.value})
+            });
+            await loadQuestions();
+        } catch (error) {
+            alert(error.message);
+        }
+    }
+
+    function showQuestionContentEditor(event, id) {
+        event.stopPropagation();
+        document.getElementById(`questionContentText-${id}`).style.display = "none";
+        document.getElementById(`questionContentEditor-${id}`).classList.remove("hidden");
+    }
+
+    function cancelQuestionContentEditor(event, id) {
+        event.stopPropagation();
+        document.getElementById(`questionContentEditor-${id}`).classList.add("hidden");
+        document.getElementById(`questionContentText-${id}`).style.display = "";
+    }
+
+    async function saveQuestionContent(event, id) {
+        event.stopPropagation();
+        const textarea = document.getElementById(`questionContentInput-${id}`);
+        const questionContent = textarea.value.trim();
+        if (!questionContent) {
+            alert("问题内容不能为空");
+            return;
+        }
+        try {
+            await request(`/api/manual-questions/${id}/content`, {
+                method: "PUT",
+                body: JSON.stringify({questionContent})
             });
             await loadQuestions();
         } catch (error) {

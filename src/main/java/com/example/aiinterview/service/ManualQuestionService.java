@@ -99,6 +99,18 @@ public class ManualQuestionService {
         return toResponse(updated);
     }
 
+    @Transactional
+    public ManualQuestionResponse updateQuestionContent(Long id, String questionContent) {
+        getQuestion(id);
+        String normalizedContent = questionContent == null ? "" : questionContent.trim();
+        if (normalizedContent.isBlank()) {
+            throw new IllegalArgumentException("问题内容不能为空");
+        }
+        manualQuestionRepository.updateQuestionContent(id, normalizedContent);
+        ManualQuestion updated = getQuestion(id);
+        return toResponse(updated);
+    }
+
     private String normalizeUnderstandingLevel(String understandingLevel, boolean allowBlank) {
         String value = understandingLevel == null ? "" : understandingLevel.trim().toUpperCase();
         if (value.isBlank() && allowBlank) {

@@ -42,6 +42,17 @@ public interface InterviewDirectionRepository {
             """)
     long countChildren(Long parentId);
 
+    @Select("""
+            SELECT COUNT(*)
+            FROM interview_direction
+            WHERE parent_id <=> #{parentId}
+              AND name = #{name}
+              AND (#{excludeId} IS NULL OR id <> #{excludeId})
+            """)
+    long countByParentAndNameExcludingId(@Param("parentId") Long parentId,
+                                         @Param("name") String name,
+                                         @Param("excludeId") Long excludeId);
+
     @Insert("""
             INSERT INTO interview_direction (
                 parent_id, name, level, sort_order, enabled, description, created_at, updated_at

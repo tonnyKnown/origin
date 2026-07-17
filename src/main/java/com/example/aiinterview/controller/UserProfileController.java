@@ -1,5 +1,6 @@
 package com.example.aiinterview.controller;
 
+import com.example.aiinterview.common.Result;
 import com.example.aiinterview.dto.UserProfileResponse;
 import com.example.aiinterview.dto.UserProfileVersionResponse;
 import com.example.aiinterview.service.UserProfileService;
@@ -22,18 +23,17 @@ public class UserProfileController {
     }
 
     @GetMapping("/current")
-    public UserProfileResponse current() {
-        return userProfileService.current();
+    public Result<UserProfileResponse> current() {
+        return Result.ok(userProfileService.current());
     }
 
-    // 首页按钮触发画像维护；复盘页只读取画像，不主动刷新。
     @PostMapping("/refresh")
-    public UserProfileResponse refresh() {
-        return userProfileService.refresh();
+    public Result<UserProfileResponse> refresh() {
+        return Result.ok(userProfileService.refresh());
     }
 
     @GetMapping("/versions")
-    public List<UserProfileVersionResponse> versions(@RequestParam(defaultValue = "10") int size) {
-        return userProfileService.versions(size);
+    public Result<List<UserProfileVersionResponse>> versions(@RequestParam(defaultValue = "10") int size) {
+        return Result.ok(userProfileService.versions(size));
     }
 }

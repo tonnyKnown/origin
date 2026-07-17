@@ -134,11 +134,11 @@
             headers: {"Content-Type": "application/json"},
             ...options
         });
-        const data = await response.json();
-        if (!response.ok) {
-            throw new Error(data.message || "请求失败");
+        const result = await response.json().catch(() => ({code: 500, message: "解析失败"}));
+        if (!response.ok || result.code !== 200) {
+            throw new Error(result.message || "请求失败");
         }
-        return data;
+        return result.data;
     }
 
     async function loadHistory() {
