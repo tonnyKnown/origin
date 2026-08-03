@@ -1,13 +1,10 @@
 package com.example.aiinterview.common;
 
-import lombok.Getter;
-
-@Getter
 public class Result<T> {
 
-    private final int code;
-    private final String message;
-    private final T data;
+    private int code;
+    private String message;
+    private T data;
 
     private Result(int code, String message, T data) {
         this.code = code;
@@ -27,4 +24,15 @@ public class Result<T> {
         return new Result<>(code, message, null);
     }
 
+    public int getCode() {
+        return code;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public T getData() {
+        return data;
+    }
 }
