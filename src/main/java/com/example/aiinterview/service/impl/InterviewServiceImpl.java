@@ -1,5 +1,6 @@
 package com.example.aiinterview.service.impl;
 
+import com.example.aiinterview.common.exception.BusinessException;
 import com.example.aiinterview.dto.AnswerScoreResponse;
 import com.example.aiinterview.dto.InterviewHistoryDetailResponse;
 import com.example.aiinterview.dto.InterviewHistoryItemResponse;
@@ -66,7 +67,7 @@ public class InterviewServiceImpl implements InterviewService {
     @Transactional
     public QuestionResponse start(String positionType) {
         if (!StringUtils.hasText(positionType)) {
-            throw new IllegalArgumentException("面试方向不能为空");
+            throw new BusinessException(400, "面试方向不能为空");
         }
         log.info("Starting interview for position: {}", positionType);
         InterviewSession session = new InterviewSession();
@@ -84,7 +85,7 @@ public class InterviewServiceImpl implements InterviewService {
     @Transactional
     public QuestionResponse startByDirection(Long directionId) {
         if (directionId == null) {
-            throw new IllegalArgumentException("面试方向不能为空");
+            throw new BusinessException(400, "面试方向不能为空");
         }
         return start(directionService.buildDirectionPath(directionId));
     }
@@ -103,13 +104,13 @@ public class InterviewServiceImpl implements InterviewService {
 
         InterviewQuestion question = questionRepository.findById(questionId);
         if (question == null) {
-            throw new IllegalArgumentException("题目不存在");
+            throw new BusinessException(404, "题目不存在");
         }
         if (!question.getInterviewId().equals(interviewId)) {
-            throw new IllegalArgumentException("题目不属于当前面试");
+            throw new BusinessException(400, "题目不属于当前面试");
         }
         if (answerRepository.findByQuestionId(questionId) != null) {
-            throw new IllegalStateException("该题已经提交过答案");
+            throw new BusinessException(400, "该题已经提交过答案");
         }
 
         AiInterviewClient.ScoreResult scoreResult = aiInterviewClient.scoreAnswer(
@@ -186,7 +187,7 @@ public class InterviewServiceImpl implements InterviewService {
     public void cancelInterview(Long interviewId) {
         InterviewSession session = getSession(interviewId);
         if (STATUS_FINISHED.equals(session.getStatus())) {
-            throw new IllegalStateException("面试已经完成，不能取消");
+            throw new BusinessException(400, "面试已经完成，不能取消");
         }
         if (STATUS_CANCELLED.equals(session.getStatus())) {
             return;
@@ -294,15 +295,15 @@ public class InterviewServiceImpl implements InterviewService {
         InterviewSession session = getSession(interviewId);
         InterviewQuestion question = questionRepository.findById(questionId);
         if (question == null) {
-            throw new IllegalArgumentException("题目不存在");
+            throw new BusinessException(404, "题目不存在");
         }
         if (!question.getInterviewId().equals(interviewId)) {
-            throw new IllegalArgumentException("题目不属于当前面试");
+            throw new BusinessException(400, "题目不属于当前面试");
         }
 
         InterviewAnswer answer = answerRepository.findByQuestionId(questionId);
         if (answer == null) {
-            throw new IllegalStateException("该题还没有原始答案，不能重新回答");
+            throw new BusinessException(400, "该题还没有原始答案，不能重新回答");
         }
 
         AiInterviewClient.ScoreResult scoreResult = aiInterviewClient.scoreAnswer(
@@ -382,13 +383,13 @@ public class InterviewServiceImpl implements InterviewService {
     private InterviewQuestion createReviewQuestion(InterviewSession session, int questionIndex) {
         long manualQuestionCount = manualQuestionRepository.countAll();
         if (manualQuestionCount == 0) {
-            throw new IllegalStateException("请先在手动提问记录中添加题目，再开始复习面试");
+            throw new BusinessException(400, "请先在手动提问记录中添加题目，再开始复习面试");
         }
 
         int offset = (int) ((questionIndex - 1) % manualQuestionCount);
         ManualQuestion manualQuestion = manualQuestionRepository.findReviewQuestionByOffset(offset);
         if (manualQuestion == null) {
-            throw new IllegalStateException("没有可用于复习的手动题目");
+            throw new BusinessException(500, "没有可用于复习的手动题目");
         }
 
         String referenceAnswer = manualQuestion.getAiAnswer();
@@ -411,7 +412,7 @@ public class InterviewServiceImpl implements InterviewService {
     private InterviewSession getSession(Long interviewId) {
         InterviewSession session = sessionRepository.findById(interviewId);
         if (session == null) {
-            throw new IllegalArgumentException("面试不存在");
+            throw new BusinessException(404, "面试不存在");
         }
         return session;
     }
@@ -476,10 +477,10 @@ public class InterviewServiceImpl implements InterviewService {
 
     private void ensureRunning(InterviewSession session) {
         if (STATUS_FINISHED.equals(session.getStatus())) {
-            throw new IllegalStateException("面试已经结束");
+            throw new BusinessException(400, "面试已经结束");
         }
         if (STATUS_CANCELLED.equals(session.getStatus())) {
-            throw new IllegalStateException("面试已经取消");
+            throw new BusinessException(400, "面试已经取消");
         }
     }
 

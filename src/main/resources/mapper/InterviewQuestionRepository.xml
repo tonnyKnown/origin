@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.aiinterview.repository.InterviewQuestionRepository">
+
+    <select id="findById" resultType="com.example.aiinterview.entity.InterviewQuestion">
+        SELECT id, interview_id, question_index, question_type,
+               question_content, reference_answer, scoring_rule, created_at
+        FROM interview_question
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByInterviewIdAndQuestionIndex" resultType="com.example.aiinterview.entity.InterviewQuestion">
+        SELECT id, interview_id, question_index, question_type,
+               question_content, reference_answer, scoring_rule, created_at
+        FROM interview_question
+        WHERE interview_id = #{interviewId} AND question_index = #{questionIndex}
+    </select>
+
+    <select id="findByInterviewIdOrderByQuestionIndexAsc" resultType="com.example.aiinterview.entity.InterviewQuestion">
+        SELECT id, interview_id, question_index, question_type,
+               question_content, reference_answer, scoring_rule, created_at
+        FROM interview_question
+        WHERE interview_id = #{interviewId}
+        ORDER BY question_index ASC
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO interview_question (
+            interview_id, question_index, question_type,
+            question_content, reference_answer, scoring_rule, created_at
+        ) VALUES (
+            #{interviewId}, #{questionIndex}, #{questionType},
+            #{questionContent}, #{referenceAnswer}, #{scoringRule}, NOW()
+        )
+    </insert>
+
+    <delete id="deleteByInterviewId">
+        DELETE FROM interview_question WHERE interview_id = #{interviewId}
+    </delete>
+
+</mapper>

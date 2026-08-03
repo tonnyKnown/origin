@@ -1,3 +1,4 @@
+-- 面试会话主表：记录每次面试的整体状态、进度和评分。
 CREATE TABLE IF NOT EXISTS interview_session (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     position_type VARCHAR(100) NOT NULL,
@@ -8,9 +9,12 @@ CREATE TABLE IF NOT EXISTS interview_session (
     improvement_advice TEXT NULL,
     finished_at DATETIME NULL,
     created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL
+    updated_at DATETIME NOT NULL,
+    INDEX idx_interview_session_created_at (created_at),
+    INDEX idx_interview_session_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- 面试方向字典表：三级树形结构（职业赛道→技术领域→岗位画像）。
 CREATE TABLE IF NOT EXISTS interview_direction (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     parent_id BIGINT NULL,
@@ -26,6 +30,7 @@ CREATE TABLE IF NOT EXISTS interview_direction (
     INDEX idx_interview_direction_sort (level, sort_order)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- 面试题表：保存每场面试生成的题目、参考答案和评分规则。
 CREATE TABLE IF NOT EXISTS interview_question (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     interview_id BIGINT NOT NULL,
@@ -39,6 +44,7 @@ CREATE TABLE IF NOT EXISTS interview_question (
     UNIQUE KEY uk_interview_question_index (interview_id, question_index)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- 面试作答表：保存用户答案、AI 评分和点评，支持重新作答。
 CREATE TABLE IF NOT EXISTS interview_answer (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     interview_id BIGINT NOT NULL,
@@ -55,6 +61,7 @@ CREATE TABLE IF NOT EXISTS interview_answer (
     UNIQUE KEY uk_interview_answer_question_id (question_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- 手动题库表：用户手动录入的问题，支持 AI 回答、自测和备注。
 CREATE TABLE IF NOT EXISTS manual_question (
     id BIGINT PRIMARY KEY AUTO_INCREMENT,
     question_content TEXT NOT NULL,
@@ -144,21 +151,67 @@ CREATE TABLE IF NOT EXISTS user_profile_version (
     INDEX idx_user_profile_version_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-ALTER TABLE interview_session ADD COLUMN overall_comment TEXT NULL;
-ALTER TABLE interview_session ADD COLUMN improvement_advice TEXT NULL;
-ALTER TABLE interview_session ADD COLUMN finished_at DATETIME NULL;
-ALTER TABLE interview_question ADD COLUMN question_type VARCHAR(50) NULL;
-ALTER TABLE interview_answer ADD COLUMN answer_summary TEXT NULL;
-ALTER TABLE interview_answer ADD COLUMN updated_at DATETIME NULL;
-ALTER TABLE interview_answer ADD COLUMN revision_count INT NOT NULL DEFAULT 0;
-ALTER TABLE manual_question ADD COLUMN manual_remark TEXT NULL;
-ALTER TABLE manual_question ADD COLUMN remark_updated_at DATETIME NULL;
-ALTER TABLE manual_question ADD COLUMN self_test_answer TEXT NULL;
-ALTER TABLE manual_question ADD COLUMN self_test_score INT NULL;
-ALTER TABLE manual_question ADD COLUMN self_test_comment TEXT NULL;
-ALTER TABLE manual_question ADD COLUMN self_test_suggestion TEXT NULL;
-ALTER TABLE manual_question ADD COLUMN self_test_at DATETIME NULL;
-ALTER TABLE manual_question ADD COLUMN understanding_level VARCHAR(20) NOT NULL DEFAULT 'HIGH';
+-- 兼容旧库：列已存在时跳过，避免启动日志被 ALTER 错误刷屏。
+SET @sql = IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'interview_session' AND COLUMN_NAME = 'overall_comment') = 0,
+    'ALTER TABLE interview_session ADD COLUMN overall_comment TEXT NULL', 'SELECT 1'
+); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'interview_session' AND COLUMN_NAME = 'improvement_advice') = 0,
+    'ALTER TABLE interview_session ADD COLUMN improvement_advice TEXT NULL', 'SELECT 1'
+); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'interview_session' AND COLUMN_NAME = 'finished_at') = 0,
+    'ALTER TABLE interview_session ADD COLUMN finished_at DATETIME NULL', 'SELECT 1'
+); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'interview_question' AND COLUMN_NAME = 'question_type') = 0,
+    'ALTER TABLE interview_question ADD COLUMN question_type VARCHAR(50) NULL', 'SELECT 1'
+); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'interview_answer' AND COLUMN_NAME = 'answer_summary') = 0,
+    'ALTER TABLE interview_answer ADD COLUMN answer_summary TEXT NULL', 'SELECT 1'
+); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'interview_answer' AND COLUMN_NAME = 'updated_at') = 0,
+    'ALTER TABLE interview_answer ADD COLUMN updated_at DATETIME NULL', 'SELECT 1'
+); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'interview_answer' AND COLUMN_NAME = 'revision_count') = 0,
+    'ALTER TABLE interview_answer ADD COLUMN revision_count INT NOT NULL DEFAULT 0', 'SELECT 1'
+); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'manual_question' AND COLUMN_NAME = 'manual_remark') = 0,
+    'ALTER TABLE manual_question ADD COLUMN manual_remark TEXT NULL', 'SELECT 1'
+); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'manual_question' AND COLUMN_NAME = 'remark_updated_at') = 0,
+    'ALTER TABLE manual_question ADD COLUMN remark_updated_at DATETIME NULL', 'SELECT 1'
+); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'manual_question' AND COLUMN_NAME = 'self_test_answer') = 0,
+    'ALTER TABLE manual_question ADD COLUMN self_test_answer TEXT NULL', 'SELECT 1'
+); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'manual_question' AND COLUMN_NAME = 'self_test_score') = 0,
+    'ALTER TABLE manual_question ADD COLUMN self_test_score INT NULL', 'SELECT 1'
+); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'manual_question' AND COLUMN_NAME = 'self_test_comment') = 0,
+    'ALTER TABLE manual_question ADD COLUMN self_test_comment TEXT NULL', 'SELECT 1'
+); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'manual_question' AND COLUMN_NAME = 'self_test_suggestion') = 0,
+    'ALTER TABLE manual_question ADD COLUMN self_test_suggestion TEXT NULL', 'SELECT 1'
+); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'manual_question' AND COLUMN_NAME = 'self_test_at') = 0,
+    'ALTER TABLE manual_question ADD COLUMN self_test_at DATETIME NULL', 'SELECT 1'
+); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+SET @sql = IF(
+    (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'manual_question' AND COLUMN_NAME = 'understanding_level') = 0,
+    'ALTER TABLE manual_question ADD COLUMN understanding_level VARCHAR(20) NOT NULL DEFAULT ''HIGH''', 'SELECT 1'
+); PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 INSERT INTO interview_direction (parent_id, name, level, sort_order, enabled, description, created_at, updated_at)
 SELECT NULL, '软件开发方向', 1, 10, TRUE, '软件研发相关岗位', NOW(), NOW()

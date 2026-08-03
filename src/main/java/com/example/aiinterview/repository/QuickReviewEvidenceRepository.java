@@ -2,90 +2,15 @@ package com.example.aiinterview.repository;
 
 import com.example.aiinterview.entity.QuickReviewEvidence;
 import org.apache.ibatis.annotations.Mapper;
-import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
 @Mapper
 public interface QuickReviewEvidenceRepository {
 
-    // 手动题库中的低掌握度、低自测分和备注会进入用户画像证据池。
-    @Select("""
-            SELECT
-                'MANUAL' AS source_type,
-                question_content AS topic,
-                CONCAT(
-                    '掌握度=', understanding_level,
-                    IF(self_test_score IS NULL, '', CONCAT('；自测分=', self_test_score)),
-                    IF(self_test_comment IS NULL OR self_test_comment = '', '', CONCAT('；自测点评=', self_test_comment)),
-                    IF(self_test_suggestion IS NULL OR self_test_suggestion = '', '', CONCAT('；建议=', self_test_suggestion)),
-                    IF(manual_remark IS NULL OR manual_remark = '', '', CONCAT('；备注=', manual_remark))
-                ) AS detail,
-                self_test_score AS score,
-                understanding_level AS understanding_level,
-                updated_at AS updated_at
-            FROM manual_question
-            WHERE understanding_level IN ('HIGH', 'MEDIUM')
-               OR self_test_score IS NULL
-               OR self_test_score < 14
-            ORDER BY
-                CASE understanding_level
-                    WHEN 'HIGH' THEN 1
-                    WHEN 'MEDIUM' THEN 2
-                    ELSE 3
-                END,
-                IFNULL(self_test_score, 0) ASC,
-                updated_at DESC
-            LIMIT 12
-            """)
     List<QuickReviewEvidence> findManualWeakEvidence();
 
-    // 历史面试低分题反映真实问答短板，权重上通常高于单纯备注。
-    @Select("""
-            SELECT
-                'INTERVIEW' AS source_type,
-                q.question_content AS topic,
-                CONCAT(
-                    '面试方向=', s.position_type,
-                    '；题型=', IFNULL(q.question_type, ''),
-                    '；得分=', a.score,
-                    '；点评=', IFNULL(a.ai_comment, ''),
-                    '；建议=', IFNULL(a.suggestion, '')
-                ) AS detail,
-                a.score AS score,
-                NULL AS understanding_level,
-                IFNULL(a.updated_at, a.created_at) AS updated_at
-            FROM interview_answer a
-            JOIN interview_question q ON q.id = a.question_id
-            JOIN interview_session s ON s.id = a.interview_id
-            WHERE a.score < 14
-            ORDER BY a.score ASC, IFNULL(a.updated_at, a.created_at) DESC
-            LIMIT 12
-            """)
     List<QuickReviewEvidence> findInterviewWeakEvidence();
 
-    // 快速复盘错题会反哺画像，形成“画像 -> 练习 -> 错题 -> 更新画像”的闭环。
-    @Select("""
-            SELECT
-                'QUICK_REVIEW' AS source_type,
-                q.knowledge_point AS topic,
-                CONCAT(
-                    '填空题=', q.question_content,
-                    '；用户答案=', IFNULL(q.user_answer, ''),
-                    '；标准答案=', IFNULL(q.blank_answer, ''),
-                    '；得分=', IFNULL(q.score, 0),
-                    '；点评=', IFNULL(q.ai_comment, ''),
-                    '；建议=', IFNULL(q.suggestion, '')
-                ) AS detail,
-                q.score AS score,
-                NULL AS understanding_level,
-                IFNULL(q.answered_at, q.updated_at) AS updated_at
-            FROM quick_review_question q
-            JOIN quick_review_paper p ON p.id = q.paper_id
-            WHERE p.status = 'SUBMITTED'
-              AND (q.score IS NULL OR q.score < 14 OR q.correct = FALSE)
-            ORDER BY IFNULL(q.score, 0) ASC, IFNULL(q.answered_at, q.updated_at) DESC
-            LIMIT 12
-            """)
     List<QuickReviewEvidence> findQuickReviewWeakEvidence();
 }

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.aiinterview.repository.InterviewAnswerRepository">
+
+    <select id="findByQuestionId" resultType="com.example.aiinterview.entity.InterviewAnswer">
+        SELECT id, interview_id, question_id, user_answer, score,
+               answer_summary, ai_comment, suggestion, created_at, updated_at, revision_count
+        FROM interview_answer
+        WHERE question_id = #{questionId}
+    </select>
+
+    <select id="findByInterviewIdOrderByIdAsc" resultType="com.example.aiinterview.entity.InterviewAnswer">
+        SELECT id, interview_id, question_id, user_answer, score,
+               answer_summary, ai_comment, suggestion, created_at, updated_at, revision_count
+        FROM interview_answer
+        WHERE interview_id = #{interviewId}
+        ORDER BY id ASC
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO interview_answer (
+            interview_id, question_id, user_answer, score,
+            answer_summary, ai_comment, suggestion, created_at, updated_at, revision_count
+        ) VALUES (
+            #{interviewId}, #{questionId}, #{userAnswer}, #{score},
+            #{answerSummary}, #{aiComment}, #{suggestion}, NOW(), NOW(), 0
+        )
+    </insert>
+
+    <update id="updateAnswerContent">
+        UPDATE interview_answer
+        SET user_answer = #{userAnswer},
+            score = #{score},
+            answer_summary = #{answerSummary},
+            ai_comment = #{aiComment},
+            suggestion = #{suggestion},
+            updated_at = NOW(),
+            revision_count = revision_count + 1
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteByInterviewId">
+        DELETE FROM interview_answer WHERE interview_id = #{interviewId}
+    </delete>
+
+</mapper>

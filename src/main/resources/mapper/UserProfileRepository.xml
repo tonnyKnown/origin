@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.aiinterview.repository.UserProfileRepository">
+
+    <select id="findActive" resultType="com.example.aiinterview.entity.UserProfile">
+        SELECT id, profile_summary, weak_points, strength_points, learning_suggestions,
+               evidence_count, version, status, created_at, updated_at
+        FROM user_profile
+        WHERE status = 'ACTIVE'
+        ORDER BY updated_at DESC
+        LIMIT 1
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user_profile (
+            profile_summary, weak_points, strength_points, learning_suggestions,
+            evidence_count, version, status, created_at, updated_at
+        ) VALUES (
+            #{profileSummary}, #{weakPoints}, #{strengthPoints}, #{learningSuggestions},
+            #{evidenceCount}, #{version}, #{status}, NOW(), NOW()
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE user_profile
+        SET profile_summary = #{profileSummary},
+            weak_points = #{weakPoints},
+            strength_points = #{strengthPoints},
+            learning_suggestions = #{learningSuggestions},
+            evidence_count = #{evidenceCount},
+            version = #{version},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+</mapper>

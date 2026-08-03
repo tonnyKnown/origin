@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.aiinterview.repository.QuickReviewQuestionRepository">
+
+    <sql id="allColumns">
+        id, paper_id, question_index, knowledge_point, question_content,
+        blank_answer, reference_answer, explanation, user_answer,
+        score, correct, ai_comment, suggestion, answered_at, created_at, updated_at
+    </sql>
+
+    <select id="findByPaperIdOrderByQuestionIndexAsc" resultType="com.example.aiinterview.entity.QuickReviewQuestionItem">
+        SELECT <include refid="allColumns"/>
+        FROM quick_review_question
+        WHERE paper_id = #{paperId}
+        ORDER BY question_index ASC
+    </select>
+
+    <select id="findByPaperIdAndQuestionIndex" resultType="com.example.aiinterview.entity.QuickReviewQuestionItem">
+        SELECT <include refid="allColumns"/>
+        FROM quick_review_question
+        WHERE paper_id = #{paperId} AND question_index = #{questionIndex}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO quick_review_question (
+            paper_id, question_index, knowledge_point, question_content,
+            blank_answer, reference_answer, explanation, user_answer,
+            score, correct, ai_comment, suggestion, answered_at, created_at, updated_at
+        ) VALUES (
+            #{paperId}, #{questionIndex}, #{knowledgePoint}, #{questionContent},
+            #{blankAnswer}, #{referenceAnswer}, #{explanation}, #{userAnswer},
+            #{score}, #{correct}, #{aiComment}, #{suggestion}, #{answeredAt}, NOW(), NOW()
+        )
+    </insert>
+
+    <update id="updateAnswer">
+        UPDATE quick_review_question
+        SET user_answer = #{userAnswer},
+            score = #{score},
+            correct = #{correct},
+            ai_comment = #{aiComment},
+            suggestion = #{suggestion},
+            answered_at = NOW(),
+            updated_at = NOW()
+        WHERE paper_id = #{paperId}
+          AND question_index = #{questionIndex}
+    </update>
+
+</mapper>

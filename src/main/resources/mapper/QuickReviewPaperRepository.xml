@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.aiinterview.repository.QuickReviewPaperRepository">
+
+    <sql id="allColumns">
+        id, user_profile, weak_points, evidence_count, question_count,
+        total_score, status, submitted_at, created_at, updated_at
+    </sql>
+
+    <select id="findById" resultType="com.example.aiinterview.entity.QuickReviewPaper">
+        SELECT <include refid="allColumns"/>
+        FROM quick_review_paper
+        WHERE id = #{id}
+    </select>
+
+    <select id="findPageOrderByCreatedAtDesc" resultType="com.example.aiinterview.entity.QuickReviewPaper">
+        SELECT <include refid="allColumns"/>
+        FROM quick_review_paper
+        ORDER BY created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO quick_review_paper (
+            user_profile, weak_points, evidence_count, question_count,
+            total_score, status, submitted_at, created_at, updated_at
+        ) VALUES (
+            #{userProfile}, #{weakPoints}, #{evidenceCount}, #{questionCount},
+            #{totalScore}, #{status}, #{submittedAt}, NOW(), NOW()
+        )
+    </insert>
+
+    <update id="finish">
+        UPDATE quick_review_paper
+        SET total_score = #{totalScore},
+            status = #{status},
+            submitted_at = NOW(),
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+</mapper>

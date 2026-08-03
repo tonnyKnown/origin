@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.aiinterview.repository.InterviewSessionRepository">
+
+    <select id="findById" resultType="com.example.aiinterview.entity.InterviewSession">
+        SELECT id, position_type, current_index, total_score, status,
+               overall_comment, improvement_advice, finished_at, created_at, updated_at
+        FROM interview_session
+        WHERE id = #{id}
+    </select>
+
+    <select id="findAllByOrderByCreatedAtDesc" resultType="com.example.aiinterview.entity.InterviewSession">
+        SELECT id, position_type, current_index, total_score, status,
+               overall_comment, improvement_advice, finished_at, created_at, updated_at
+        FROM interview_session
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="findPageOrderByCreatedAtDesc" resultType="com.example.aiinterview.entity.InterviewSession">
+        SELECT id, position_type, current_index, total_score, status,
+               overall_comment, improvement_advice, finished_at, created_at, updated_at
+        FROM interview_session
+        ORDER BY created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*) FROM interview_session
+    </select>
+
+    <select id="findPageByDirectionOrderByCreatedAtDesc" resultType="com.example.aiinterview.entity.InterviewSession">
+        SELECT id, position_type, current_index, total_score, status,
+               overall_comment, improvement_advice, finished_at, created_at, updated_at
+        FROM interview_session
+        WHERE position_type = #{direction}
+           OR position_type LIKE CONCAT(#{direction}, ' /%')
+        ORDER BY created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countByDirection" resultType="long">
+        SELECT COUNT(*) FROM interview_session
+        WHERE position_type = #{direction}
+           OR position_type LIKE CONCAT(#{direction}, ' /%')
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO interview_session (
+            position_type, current_index, total_score, status,
+            overall_comment, improvement_advice, finished_at, created_at, updated_at
+        ) VALUES (
+            #{positionType}, #{currentIndex}, #{totalScore}, #{status},
+            #{overallComment}, #{improvementAdvice}, #{finishedAt}, NOW(), NOW()
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE interview_session
+        SET position_type = #{positionType},
+            current_index = #{currentIndex},
+            total_score = #{totalScore},
+            status = #{status},
+            overall_comment = #{overallComment},
+            improvement_advice = #{improvementAdvice},
+            finished_at = #{finishedAt},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM interview_session WHERE id = #{id}
+    </delete>
+
+</mapper>

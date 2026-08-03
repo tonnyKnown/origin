@@ -1,9 +1,9 @@
 package com.example.aiinterview.service;
 
+import com.example.aiinterview.common.exception.BusinessException;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -14,10 +14,9 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@Slf4j
 @Service
 public class AiInterviewClient {
-
-    private static final Logger log = LoggerFactory.getLogger(AiInterviewClient.class);
 
     private final ChatLanguageModel chatModel;
 
@@ -206,7 +205,7 @@ public class AiInterviewClient {
 
     public UserProfileResult generateUserProfile(String evidenceText) {
         if (chatModel == null) {
-            throw new IllegalStateException("请先配置大模型 API Key，再更新用户画像。");
+            throw new BusinessException(400, "请先配置大模型 API Key，再更新用户画像。");
         }
 
         // 画像是后续出题的核心输入，因此要求模型输出固定 ASCII 标签，降低解析不稳定性。
@@ -244,7 +243,7 @@ public class AiInterviewClient {
                                                             List<String> learningSuggestions,
                                                             int questionCount) {
         if (chatModel == null) {
-            throw new IllegalStateException("请先配置大模型 API Key，再基于用户画像生成复盘试卷。");
+            throw new BusinessException(400, "请先配置大模型 API Key，再基于用户画像生成复盘试卷。");
         }
 
         // 这里基于已有画像出题，不允许模型重新改写画像，保证“画像维护”和“生成试卷”职责分离。
@@ -293,7 +292,7 @@ public class AiInterviewClient {
         List<QuickReviewQuestion> questions = parseQuickReviewQuestions(output, questionCount);
         if (questions.isEmpty()) {
             // 正式画像试卷不使用本地兜底题，避免用户误以为题目来自当前画像。
-            throw new IllegalStateException("大模型没有返回有效的填空题，请重新生成试卷。");
+            throw new BusinessException(500, "大模型没有返回有效的填空题，请重新生成试卷。");
         }
         List<String> focus = splitFocus(extractAscii(output, "FOCUS:", "ITEM 1", String.join("; ", weakPoints)));
         return new QuickReviewResult(profileSummary, focus.isEmpty() ? weakPoints : focus, questions);

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.aiinterview.repository.InterviewDirectionRepository">
+
+    <select id="findById" resultType="com.example.aiinterview.entity.InterviewDirection">
+        SELECT id, parent_id, name, level, sort_order, enabled, description, created_at, updated_at
+        FROM interview_direction
+        WHERE id = #{id}
+    </select>
+
+    <select id="findAll" resultType="com.example.aiinterview.entity.InterviewDirection">
+        SELECT id, parent_id, name, level, sort_order, enabled, description, created_at, updated_at
+        FROM interview_direction
+        ORDER BY level ASC, sort_order ASC, id ASC
+    </select>
+
+    <select id="findEnabled" resultType="com.example.aiinterview.entity.InterviewDirection">
+        SELECT id, parent_id, name, level, sort_order, enabled, description, created_at, updated_at
+        FROM interview_direction
+        WHERE enabled = TRUE
+        ORDER BY level ASC, sort_order ASC, id ASC
+    </select>
+
+    <select id="countChildren" resultType="long">
+        SELECT COUNT(*) FROM interview_direction WHERE parent_id = #{parentId}
+    </select>
+
+    <select id="countByParentAndNameExcludingId" resultType="long">
+        SELECT COUNT(*) FROM interview_direction
+        WHERE parent_id &lt;=&gt; #{parentId}
+          AND name = #{name}
+          AND (#{excludeId} IS NULL OR id &lt;&gt; #{excludeId})
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO interview_direction (
+            parent_id, name, level, sort_order, enabled, description, created_at, updated_at
+        ) VALUES (
+            #{parentId}, #{name}, #{level}, #{sortOrder}, #{enabled}, #{description}, NOW(), NOW()
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE interview_direction
+        SET name = #{name},
+            sort_order = #{sortOrder},
+            enabled = #{enabled},
+            description = #{description},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateEnabled">
+        UPDATE interview_direction
+        SET enabled = #{enabled},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+</mapper>

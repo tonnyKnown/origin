@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.aiinterview.repository.ManualQuestionRepository">
+
+    <sql id="allColumns">
+        id, question_content, understanding_level, ai_answer, answered_at,
+        manual_remark, remark_updated_at,
+        self_test_answer, self_test_score, self_test_comment, self_test_suggestion, self_test_at,
+        created_at, updated_at
+    </sql>
+
+    <select id="findById" resultType="com.example.aiinterview.entity.ManualQuestion">
+        SELECT <include refid="allColumns"/>
+        FROM manual_question
+        WHERE id = #{id}
+    </select>
+
+    <select id="findAllOrderByCreatedAtDesc" resultType="com.example.aiinterview.entity.ManualQuestion">
+        SELECT <include refid="allColumns"/>
+        FROM manual_question
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="countAll" resultType="long">
+        SELECT COUNT(*) FROM manual_question
+    </select>
+
+    <select id="findReviewQuestionByOffset" resultType="com.example.aiinterview.entity.ManualQuestion">
+        SELECT <include refid="allColumns"/>
+        FROM manual_question
+        ORDER BY
+            CASE understanding_level
+                WHEN 'LOW' THEN 1
+                WHEN 'MEDIUM' THEN 2
+                ELSE 3
+            END,
+            updated_at DESC,
+            created_at DESC
+        LIMIT 1 OFFSET #{offset}
+    </select>
+
+    <select id="findPage" resultType="com.example.aiinterview.entity.ManualQuestion">
+        SELECT <include refid="allColumns"/>
+        FROM manual_question
+        WHERE (#{keyword} IS NULL OR #{keyword} = '' OR question_content LIKE CONCAT('%', #{keyword}, '%'))
+          AND (#{understandingLevel} IS NULL OR #{understandingLevel} = '' OR understanding_level = #{understandingLevel})
+        ORDER BY created_at DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+
+    <select id="countByKeyword" resultType="long">
+        SELECT COUNT(*) FROM manual_question
+        WHERE (#{keyword} IS NULL OR #{keyword} = '' OR question_content LIKE CONCAT('%', #{keyword}, '%'))
+          AND (#{understandingLevel} IS NULL OR #{understandingLevel} = '' OR understanding_level = #{understandingLevel})
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO manual_question (
+            question_content, understanding_level, ai_answer, answered_at, created_at, updated_at
+        ) VALUES (
+            #{questionContent}, #{understandingLevel}, #{aiAnswer}, #{answeredAt}, NOW(), NOW()
+        )
+    </insert>
+
+    <update id="updateAnswer">
+        UPDATE manual_question
+        SET ai_answer = #{aiAnswer},
+            answered_at = NOW(),
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateManualRemark">
+        UPDATE manual_question
+        SET manual_remark = #{manualRemark},
+            remark_updated_at = NOW(),
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateSelfTest">
+        UPDATE manual_question
+        SET self_test_answer = #{userAnswer},
+            self_test_score = #{score},
+            self_test_comment = #{comment},
+            self_test_suggestion = #{suggestion},
+            self_test_at = NOW(),
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateUnderstandingLevel">
+        UPDATE manual_question
+        SET understanding_level = #{understandingLevel},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateQuestionContent">
+        UPDATE manual_question
+        SET question_content = #{questionContent},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+</mapper>
