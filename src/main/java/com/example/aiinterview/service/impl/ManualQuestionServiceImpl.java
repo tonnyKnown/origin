@@ -5,8 +5,9 @@ import com.example.aiinterview.dto.ManualQuestionPageResponse;
 import com.example.aiinterview.dto.ManualQuestionResponse;
 import com.example.aiinterview.entity.ManualQuestion;
 import com.example.aiinterview.repository.ManualQuestionRepository;
-import com.example.aiinterview.service.AiInterviewClient;
 import com.example.aiinterview.service.ManualQuestionService;
+import com.example.aiinterview.service.ai.AiQuestionClient;
+import com.example.aiinterview.service.ai.AiScoringClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,12 +19,15 @@ import java.util.List;
 public class ManualQuestionServiceImpl implements ManualQuestionService {
 
     private final ManualQuestionRepository manualQuestionRepository;
-    private final AiInterviewClient aiInterviewClient;
+    private final AiQuestionClient aiQuestionClient;
+    private final AiScoringClient aiScoringClient;
 
     public ManualQuestionServiceImpl(ManualQuestionRepository manualQuestionRepository,
-                                     AiInterviewClient aiInterviewClient) {
+                                     AiQuestionClient aiQuestionClient,
+                                     AiScoringClient aiScoringClient) {
         this.manualQuestionRepository = manualQuestionRepository;
-        this.aiInterviewClient = aiInterviewClient;
+        this.aiQuestionClient = aiQuestionClient;
+        this.aiScoringClient = aiScoringClient;
     }
 
     @Override
@@ -66,7 +70,7 @@ public class ManualQuestionServiceImpl implements ManualQuestionService {
     public ManualQuestionResponse answer(Long id) {
         log.info("Generating AI answer for manual question: id={}", id);
         ManualQuestion manualQuestion = getQuestion(id);
-        String aiAnswer = aiInterviewClient.answerManualQuestion(manualQuestion.getQuestionContent());
+        String aiAnswer = aiQuestionClient.answerManualQuestion(manualQuestion.getQuestionContent());
         manualQuestionRepository.updateAnswer(id, aiAnswer);
         ManualQuestion updated = getQuestion(id);
         return toResponse(updated);
@@ -88,7 +92,7 @@ public class ManualQuestionServiceImpl implements ManualQuestionService {
         log.info("Self-test for manual question: id={}", id);
         ManualQuestion manualQuestion = getQuestion(id);
         String normalizedAnswer = userAnswer == null ? "" : userAnswer.trim();
-        AiInterviewClient.ScoreResult scoreResult = aiInterviewClient.scoreManualSelfTest(
+        AiScoringClient.ScoreResult scoreResult = aiScoringClient.scoreManualSelfTest(
                 manualQuestion.getQuestionContent(),
                 normalizedAnswer
         );

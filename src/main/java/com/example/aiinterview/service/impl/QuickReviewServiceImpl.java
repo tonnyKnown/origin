@@ -17,8 +17,9 @@ import com.example.aiinterview.repository.QuickReviewEvidenceRepository;
 import com.example.aiinterview.repository.QuickReviewPaperRepository;
 import com.example.aiinterview.repository.QuickReviewQuestionRepository;
 import com.example.aiinterview.repository.UserProfileRepository;
-import com.example.aiinterview.service.AiInterviewClient;
 import com.example.aiinterview.service.QuickReviewService;
+import com.example.aiinterview.service.ai.AiQuickReviewClient;
+import com.example.aiinterview.service.ai.AiScoringClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,18 +41,21 @@ public class QuickReviewServiceImpl implements QuickReviewService {
     private final QuickReviewPaperRepository paperRepository;
     private final QuickReviewQuestionRepository questionRepository;
     private final UserProfileRepository userProfileRepository;
-    private final AiInterviewClient aiInterviewClient;
+    private final AiQuickReviewClient aiQuickReviewClient;
+    private final AiScoringClient aiScoringClient;
 
     public QuickReviewServiceImpl(QuickReviewEvidenceRepository evidenceRepository,
                                   QuickReviewPaperRepository paperRepository,
                                   QuickReviewQuestionRepository questionRepository,
                                   UserProfileRepository userProfileRepository,
-                                  AiInterviewClient aiInterviewClient) {
+                                  AiQuickReviewClient aiQuickReviewClient,
+                                  AiScoringClient aiScoringClient) {
         this.evidenceRepository = evidenceRepository;
         this.paperRepository = paperRepository;
         this.questionRepository = questionRepository;
         this.userProfileRepository = userProfileRepository;
-        this.aiInterviewClient = aiInterviewClient;
+        this.aiQuickReviewClient = aiQuickReviewClient;
+        this.aiScoringClient = aiScoringClient;
     }
 
     @Override
@@ -65,7 +69,7 @@ public class QuickReviewServiceImpl implements QuickReviewService {
 
         List<String> weakPoints = splitWeakPoints(profile.getWeakPoints());
         List<String> learningSuggestions = splitWeakPoints(profile.getLearningSuggestions());
-        AiInterviewClient.QuickReviewResult result = aiInterviewClient.generateQuickReviewFromProfile(
+        AiQuickReviewClient.QuickReviewResult result = aiQuickReviewClient.generateQuickReviewFromProfile(
                 profile.getProfileSummary(),
                 weakPoints,
                 learningSuggestions,
@@ -81,7 +85,7 @@ public class QuickReviewServiceImpl implements QuickReviewService {
         paper.setStatus("RUNNING");
         paperRepository.insert(paper);
 
-        for (AiInterviewClient.QuickReviewQuestion question : result.questions()) {
+        for (AiQuickReviewClient.QuickReviewQuestion question : result.questions()) {
             QuickReviewQuestionItem item = new QuickReviewQuestionItem();
             item.setPaperId(paper.getId());
             item.setQuestionIndex(question.questionIndex());
@@ -190,7 +194,7 @@ public class QuickReviewServiceImpl implements QuickReviewService {
         if (!StringUtils.hasText(normalizedAnswer)) {
             throw new BusinessException(400, "答案不能为空");
         }
-        AiInterviewClient.QuickReviewScore score = aiInterviewClient.scoreQuickReviewAnswer(
+        AiScoringClient.QuickReviewScore score = aiScoringClient.scoreQuickReviewAnswer(
                 questionContent,
                 referenceAnswer,
                 normalizedAnswer
@@ -213,7 +217,7 @@ public class QuickReviewServiceImpl implements QuickReviewService {
             return question;
         }
 
-        AiInterviewClient.QuickReviewScore score = aiInterviewClient.scoreQuickReviewAnswer(
+        AiScoringClient.QuickReviewScore score = aiScoringClient.scoreQuickReviewAnswer(
                 question.getQuestionContent(),
                 StringUtils.hasText(question.getBlankAnswer()) ? question.getBlankAnswer() : question.getReferenceAnswer(),
                 userAnswer
@@ -225,7 +229,7 @@ public class QuickReviewServiceImpl implements QuickReviewService {
         return question;
     }
 
-    private QuickReviewQuestionResponse toQuestionResponse(AiInterviewClient.QuickReviewQuestion question) {
+    private QuickReviewQuestionResponse toQuestionResponse(AiQuickReviewClient.QuickReviewQuestion question) {
         return new QuickReviewQuestionResponse(
                 question.questionIndex(),
                 question.knowledgePoint(),

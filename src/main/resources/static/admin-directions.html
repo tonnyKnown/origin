@@ -99,6 +99,7 @@
     </div>
 </main>
 
+<script src="common.js"></script>
 <script>
     let directionTree = [];
     let flatDirections = [];
@@ -109,20 +110,6 @@
 
     window.addEventListener("DOMContentLoaded", loadTree);
 
-    async function request(url, options = {}) {
-        const response = await fetch(url, {
-            headers: {"Content-Type": "application/json"},
-            ...options
-        });
-        if (response.status === 204) {
-            return null;
-        }
-        const result = await response.json().catch(() => ({code: 500, message: "解析失败"}));
-        if (!response.ok || result.code !== 200) {
-            throw new Error(result.message || "请求失败");
-        }
-        return result.data;
-    }
 
     async function loadTree() {
         directionTree = await request("/api/interview-directions/admin/tree");
@@ -399,14 +386,6 @@
         return value ? Number(value) : null;
     }
 
-    function escapeHtml(value) {
-        return String(value || "")
-            .replaceAll("&", "&amp;")
-            .replaceAll("<", "&lt;")
-            .replaceAll(">", "&gt;")
-            .replaceAll("\"", "&quot;")
-            .replaceAll("'", "&#039;");
-    }
 </script>
 </body>
 </html>

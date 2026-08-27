@@ -1,5 +1,6 @@
 package com.example.aiinterview.service.impl;
 
+import com.example.aiinterview.common.ApiCode;
 import com.example.aiinterview.common.exception.BusinessException;
 import com.example.aiinterview.dto.AnswerScoreResponse;
 import com.example.aiinterview.dto.InterviewHistoryDetailResponse;
@@ -16,10 +17,12 @@ import com.example.aiinterview.repository.InterviewAnswerRepository;
 import com.example.aiinterview.repository.InterviewQuestionRepository;
 import com.example.aiinterview.repository.InterviewSessionRepository;
 import com.example.aiinterview.repository.ManualQuestionRepository;
-import com.example.aiinterview.service.AiInterviewClient;
 import com.example.aiinterview.service.InterviewDirectionService;
 import com.example.aiinterview.service.InterviewService;
+import com.example.aiinterview.service.ai.AiQuestionClient;
+import com.example.aiinterview.service.ai.AiScoringClient;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -35,7 +38,6 @@ import java.util.stream.Collectors;
 @Service
 public class InterviewServiceImpl implements InterviewService {
 
-    private static final int TOTAL_QUESTIONS = 5;
     private static final String REVIEW_POSITION_TYPE = "REVIEW";
     private static final String REVIEW_QUESTION_TYPE = "REVIEW";
     private static final String STATUS_RUNNING = "RUNNING";
@@ -47,27 +49,32 @@ public class InterviewServiceImpl implements InterviewService {
     private final InterviewAnswerRepository answerRepository;
     private final ManualQuestionRepository manualQuestionRepository;
     private final InterviewDirectionService directionService;
-    private final AiInterviewClient aiInterviewClient;
+    private final AiQuestionClient aiQuestionClient;
+    private final AiScoringClient aiScoringClient;
+
+    @Value("${app.interview.total-questions:5}")
+    private int totalQuestions;
 
     public InterviewServiceImpl(InterviewSessionRepository sessionRepository,
                                 InterviewQuestionRepository questionRepository,
                                 InterviewAnswerRepository answerRepository,
                                 ManualQuestionRepository manualQuestionRepository,
                                 InterviewDirectionService directionService,
-                                AiInterviewClient aiInterviewClient) {
+                                AiQuestionClient aiQuestionClient,
+                                AiScoringClient aiScoringClient) {
         this.sessionRepository = sessionRepository;
         this.questionRepository = questionRepository;
         this.answerRepository = answerRepository;
         this.manualQuestionRepository = manualQuestionRepository;
         this.directionService = directionService;
-        this.aiInterviewClient = aiInterviewClient;
+        this.aiQuestionClient = aiQuestionClient;
+        this.aiScoringClient = aiScoringClient;
     }
 
     @Override
-    @Transactional
     public QuestionResponse start(String positionType) {
         if (!StringUtils.hasText(positionType)) {
-            throw new BusinessException(400, "面试方向不能为空");
+            throw new BusinessException(ApiCode.BAD_REQUEST, "面试方向不能为空");
         }
         log.info("Starting interview for position: {}", positionType);
         InterviewSession session = new InterviewSession();
@@ -75,50 +82,78 @@ public class InterviewServiceImpl implements InterviewService {
         session.setCurrentIndex(1);
         session.setTotalScore(0);
         session.setStatus(STATUS_RUNNING);
-        sessionRepository.insert(session);
 
+        // 先事务外生成第一题（大模型调用不占用 DB 连接），再在同一短事务里落库会话与题目，
+        // 生成失败时不会留下空会话。
         InterviewQuestion question = createQuestion(session, 1);
+        insertSessionAndQuestion(session, question);
         return toQuestionResponse(session, question);
     }
 
-    @Override
     @Transactional
+    public void insertSessionAndQuestion(InterviewSession session, InterviewQuestion question) {
+        sessionRepository.insert(session);
+        question.setInterviewId(session.getId());
+        questionRepository.insert(question);
+    }
+
+    @Override
     public QuestionResponse startByDirection(Long directionId) {
         if (directionId == null) {
-            throw new BusinessException(400, "面试方向不能为空");
+            throw new BusinessException(ApiCode.BAD_REQUEST, "面试方向不能为空");
         }
         return start(directionService.buildDirectionPath(directionId));
     }
 
     @Override
-    @Transactional
     public QuestionResponse startReview() {
         return start(REVIEW_POSITION_TYPE);
     }
 
     @Override
-    @Transactional
     public AnswerScoreResponse submitAnswer(Long interviewId, Long questionId, String userAnswer) {
         InterviewSession session = getSession(interviewId);
         ensureRunning(session);
 
         InterviewQuestion question = questionRepository.findById(questionId);
         if (question == null) {
-            throw new BusinessException(404, "题目不存在");
+            throw new BusinessException(ApiCode.NOT_FOUND, "题目不存在");
         }
         if (!question.getInterviewId().equals(interviewId)) {
-            throw new BusinessException(400, "题目不属于当前面试");
+            throw new BusinessException(ApiCode.BAD_REQUEST, "题目不属于当前面试");
         }
         if (answerRepository.findByQuestionId(questionId) != null) {
-            throw new BusinessException(400, "该题已经提交过答案");
+            throw new BusinessException(ApiCode.BAD_REQUEST, "该题已经提交过答案");
         }
 
-        AiInterviewClient.ScoreResult scoreResult = aiInterviewClient.scoreAnswer(
+        // 大模型评分在事务之外执行，避免长时间占用 DB 连接与 Tomcat 线程。
+        AiScoringClient.ScoreResult scoreResult = aiScoringClient.scoreAnswer(
                 question.getQuestionContent(),
                 question.getReferenceAnswer(),
                 question.getScoringRule(),
                 userAnswer
         );
+
+        return persistAnswer(interviewId, questionId, userAnswer, scoreResult);
+    }
+
+    @Transactional
+    public AnswerScoreResponse persistAnswer(Long interviewId, Long questionId, String userAnswer,
+                                             AiScoringClient.ScoreResult scoreResult) {
+        InterviewSession session = getSession(interviewId);
+        ensureRunning(session);
+
+        InterviewQuestion question = questionRepository.findById(questionId);
+        if (question == null) {
+            throw new BusinessException(ApiCode.NOT_FOUND, "题目不存在");
+        }
+        if (!question.getInterviewId().equals(interviewId)) {
+            throw new BusinessException(ApiCode.BAD_REQUEST, "题目不属于当前面试");
+        }
+        // 事务内再判一次重，配合 interview_answer(question_id) 唯一键，彻底兜住并发重复提交。
+        if (answerRepository.findByQuestionId(questionId) != null) {
+            throw new BusinessException(ApiCode.CONFLICT, "该题已经提交过答案，请勿重复提交");
+        }
 
         InterviewAnswer answer = new InterviewAnswer();
         answer.setInterviewId(interviewId);
@@ -135,7 +170,7 @@ public class InterviewServiceImpl implements InterviewService {
                 .sum();
         session.setTotalScore(totalScore);
 
-        boolean finished = question.getQuestionIndex() >= TOTAL_QUESTIONS;
+        boolean finished = question.getQuestionIndex() >= totalQuestions;
         if (finished) {
             session.setStatus(STATUS_FINISHED);
             session.setFinishedAt(LocalDateTime.now());
@@ -162,7 +197,6 @@ public class InterviewServiceImpl implements InterviewService {
     }
 
     @Override
-    @Transactional
     public QuestionResponse nextQuestion(Long interviewId) {
         InterviewSession session = getSession(interviewId);
         ensureRunning(session);
@@ -177,7 +211,6 @@ public class InterviewServiceImpl implements InterviewService {
     }
 
     @Override
-    @Transactional
     public QuestionResponse continueInterview(Long interviewId) {
         return nextQuestion(interviewId);
     }
@@ -187,7 +220,7 @@ public class InterviewServiceImpl implements InterviewService {
     public void cancelInterview(Long interviewId) {
         InterviewSession session = getSession(interviewId);
         if (STATUS_FINISHED.equals(session.getStatus())) {
-            throw new BusinessException(400, "面试已经完成，不能取消");
+            throw new BusinessException(ApiCode.BAD_REQUEST, "面试已经完成，不能取消");
         }
         if (STATUS_CANCELLED.equals(session.getStatus())) {
             return;
@@ -290,28 +323,47 @@ public class InterviewServiceImpl implements InterviewService {
     }
 
     @Override
-    @Transactional
     public ReAnswerResponse reAnswer(Long interviewId, Long questionId, String userAnswer) {
         InterviewSession session = getSession(interviewId);
         InterviewQuestion question = questionRepository.findById(questionId);
         if (question == null) {
-            throw new BusinessException(404, "题目不存在");
+            throw new BusinessException(ApiCode.NOT_FOUND, "题目不存在");
         }
         if (!question.getInterviewId().equals(interviewId)) {
-            throw new BusinessException(400, "题目不属于当前面试");
+            throw new BusinessException(ApiCode.BAD_REQUEST, "题目不属于当前面试");
         }
 
         InterviewAnswer answer = answerRepository.findByQuestionId(questionId);
         if (answer == null) {
-            throw new BusinessException(400, "该题还没有原始答案，不能重新回答");
+            throw new BusinessException(ApiCode.BAD_REQUEST, "该题还没有原始答案，不能重新回答");
         }
 
-        AiInterviewClient.ScoreResult scoreResult = aiInterviewClient.scoreAnswer(
+        AiScoringClient.ScoreResult scoreResult = aiScoringClient.scoreAnswer(
                 question.getQuestionContent(),
                 question.getReferenceAnswer(),
                 question.getScoringRule(),
                 userAnswer
         );
+
+        return persistReAnswer(interviewId, questionId, userAnswer, scoreResult);
+    }
+
+    @Transactional
+    public ReAnswerResponse persistReAnswer(Long interviewId, Long questionId, String userAnswer,
+                                            AiScoringClient.ScoreResult scoreResult) {
+        InterviewSession session = getSession(interviewId);
+        InterviewQuestion question = questionRepository.findById(questionId);
+        if (question == null) {
+            throw new BusinessException(ApiCode.NOT_FOUND, "题目不存在");
+        }
+        if (!question.getInterviewId().equals(interviewId)) {
+            throw new BusinessException(ApiCode.BAD_REQUEST, "题目不属于当前面试");
+        }
+
+        InterviewAnswer answer = answerRepository.findByQuestionId(questionId);
+        if (answer == null) {
+            throw new BusinessException(ApiCode.BAD_REQUEST, "该题还没有原始答案，不能重新回答");
+        }
 
         answer.setUserAnswer(userAnswer);
         answer.setScore(scoreResult.score());
@@ -362,11 +414,12 @@ public class InterviewServiceImpl implements InterviewService {
                 .map(InterviewQuestion::getQuestionContent)
                 .collect(Collectors.joining("\n"));
         String questionType = resolveQuestionType(questionIndex);
-        AiInterviewClient.GeneratedQuestion generatedQuestion = aiInterviewClient.generateQuestion(
+        AiQuestionClient.GeneratedQuestion generatedQuestion = aiQuestionClient.generateQuestion(
                 session.getPositionType(),
                 questionIndex,
                 questionType,
-                askedQuestions
+                askedQuestions,
+                totalQuestions
         );
 
         InterviewQuestion question = new InterviewQuestion();
@@ -376,25 +429,29 @@ public class InterviewServiceImpl implements InterviewService {
         question.setQuestionContent(generatedQuestion.questionContent());
         question.setReferenceAnswer(generatedQuestion.referenceAnswer());
         question.setScoringRule(generatedQuestion.scoringRule());
-        questionRepository.insert(question);
         return question;
+    }
+
+    @Transactional
+    public void persistQuestion(InterviewQuestion question) {
+        questionRepository.insert(question);
     }
 
     private InterviewQuestion createReviewQuestion(InterviewSession session, int questionIndex) {
         long manualQuestionCount = manualQuestionRepository.countAll();
         if (manualQuestionCount == 0) {
-            throw new BusinessException(400, "请先在手动提问记录中添加题目，再开始复习面试");
+            throw new BusinessException(ApiCode.BAD_REQUEST, "请先在手动提问记录中添加题目，再开始复习面试");
         }
 
         int offset = (int) ((questionIndex - 1) % manualQuestionCount);
         ManualQuestion manualQuestion = manualQuestionRepository.findReviewQuestionByOffset(offset);
         if (manualQuestion == null) {
-            throw new BusinessException(500, "没有可用于复习的手动题目");
+            throw new BusinessException(ApiCode.INTERNAL_ERROR, "没有可用于复习的手动题目");
         }
 
         String referenceAnswer = manualQuestion.getAiAnswer();
         if (referenceAnswer == null || referenceAnswer.isBlank()) {
-            referenceAnswer = aiInterviewClient.answerManualQuestion(manualQuestion.getQuestionContent());
+            referenceAnswer = aiQuestionClient.answerManualQuestion(manualQuestion.getQuestionContent());
             manualQuestionRepository.updateAnswer(manualQuestion.getId(), referenceAnswer);
         }
 
@@ -412,7 +469,7 @@ public class InterviewServiceImpl implements InterviewService {
     private InterviewSession getSession(Long interviewId) {
         InterviewSession session = sessionRepository.findById(interviewId);
         if (session == null) {
-            throw new BusinessException(404, "面试不存在");
+            throw new BusinessException(ApiCode.NOT_FOUND, "面试不存在");
         }
         return session;
     }
@@ -423,7 +480,7 @@ public class InterviewServiceImpl implements InterviewService {
                 question.getId(),
                 question.getQuestionIndex(),
                 question.getQuestionType(),
-                TOTAL_QUESTIONS,
+                totalQuestions,
                 question.getQuestionContent()
         );
     }
@@ -477,10 +534,10 @@ public class InterviewServiceImpl implements InterviewService {
 
     private void ensureRunning(InterviewSession session) {
         if (STATUS_FINISHED.equals(session.getStatus())) {
-            throw new BusinessException(400, "面试已经结束");
+            throw new BusinessException(ApiCode.BAD_REQUEST, "面试已经结束");
         }
         if (STATUS_CANCELLED.equals(session.getStatus())) {
-            throw new BusinessException(400, "面试已经取消");
+            throw new BusinessException(ApiCode.BAD_REQUEST, "面试已经取消");
         }
     }
 
@@ -493,7 +550,7 @@ public class InterviewServiceImpl implements InterviewService {
         if (totalScore >= 70) {
             return "整体表现良好，能够覆盖主要考点，但仍有" + weakCount + "道题需要补充细节和项目化表达。";
         }
-        return "整体表现需要加强，建议优先复盘低分题，补齐Java基础、并发、中间件和架构设计的核心知识链路。";
+        return "整体表现需要加强，建议优先复盘低分题，补齐核心知识链路。";
     }
 
     private String buildAdvice(List<SummaryResponse.QuestionSummary> questions) {

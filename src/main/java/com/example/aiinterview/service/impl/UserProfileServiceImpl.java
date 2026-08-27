@@ -9,8 +9,8 @@ import com.example.aiinterview.entity.UserProfileVersion;
 import com.example.aiinterview.repository.QuickReviewEvidenceRepository;
 import com.example.aiinterview.repository.UserProfileRepository;
 import com.example.aiinterview.repository.UserProfileVersionRepository;
-import com.example.aiinterview.service.AiInterviewClient;
 import com.example.aiinterview.service.UserProfileService;
+import com.example.aiinterview.service.ai.AiProfileClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,16 +27,16 @@ public class UserProfileServiceImpl implements UserProfileService {
     private final QuickReviewEvidenceRepository evidenceRepository;
     private final UserProfileRepository profileRepository;
     private final UserProfileVersionRepository versionRepository;
-    private final AiInterviewClient aiInterviewClient;
+    private final AiProfileClient aiProfileClient;
 
     public UserProfileServiceImpl(QuickReviewEvidenceRepository evidenceRepository,
                                   UserProfileRepository profileRepository,
                                   UserProfileVersionRepository versionRepository,
-                                  AiInterviewClient aiInterviewClient) {
+                                  AiProfileClient aiProfileClient) {
         this.evidenceRepository = evidenceRepository;
         this.profileRepository = profileRepository;
         this.versionRepository = versionRepository;
-        this.aiInterviewClient = aiInterviewClient;
+        this.aiProfileClient = aiProfileClient;
     }
 
     @Override
@@ -63,14 +63,11 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Override
     @Transactional
     public UserProfileResponse refresh() {
-        if (!aiInterviewClient.isAvailable()) {
-            throw new BusinessException(400, "请先配置大模型 API Key，再更新用户画像。");
-        }
-        log.info("Refreshing user profile");
+        log.info("Refreshing user profile (model available={})", aiProfileClient.isAvailable());
 
         List<QuickReviewEvidence> evidenceList = loadEvidence();
         String evidenceText = buildEvidenceText(evidenceList);
-        AiInterviewClient.UserProfileResult result = aiInterviewClient.generateUserProfile(evidenceText);
+        AiProfileClient.UserProfileResult result = aiProfileClient.generateUserProfile(evidenceText);
 
         UserProfile profile = profileRepository.findActive();
         int nextVersion = profile == null || profile.getVersion() == null ? 1 : profile.getVersion() + 1;
@@ -95,7 +92,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         version.setLearningSuggestions(profile.getLearningSuggestions());
         version.setEvidenceSnapshot(evidenceText);
         version.setEvidenceCount(evidenceList.size());
-        version.setModelName(aiInterviewClient.modelName());
+        version.setModelName(aiProfileClient.isAvailable() ? aiProfileClient.modelName() : "mock");
         versionRepository.insert(version);
 
         log.info("User profile refreshed: version={}", nextVersion);
@@ -129,7 +126,7 @@ public class UserProfileServiceImpl implements UserProfileService {
         return evidenceList;
     }
 
-    private void fillProfile(UserProfile profile, AiInterviewClient.UserProfileResult result, int evidenceCount) {
+    private void fillProfile(UserProfile profile, AiProfileClient.UserProfileResult result, int evidenceCount) {
         profile.setProfileSummary(result.profileSummary());
         profile.setWeakPoints(joinList(result.weakPoints()));
         profile.setStrengthPoints(joinList(result.strengthPoints()));
@@ -154,7 +151,7 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     private String buildEvidenceText(List<QuickReviewEvidence> evidenceList) {
         if (evidenceList.isEmpty()) {
-            return "暂无明确历史证据。请基于通用 Java 后端学习画像给出保守建议，并提示用户补充面试和自测记录。";
+            return "暂无明确历史证据。请基于通用技术方向学习画像给出保守建议，并提示用户补充面试和自测记录。";
         }
 
         StringBuilder builder = new StringBuilder();

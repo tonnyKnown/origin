@@ -272,6 +272,7 @@
     </section>
 </main>
 
+<script src="common.js"></script>
 <script>
     let currentPaperId = null;
     let quickReviewQuestions = [];
@@ -283,17 +284,6 @@
         loadHistory();
     });
 
-    async function request(url, options = {}) {
-        const response = await fetch(url, {
-            headers: {"Content-Type": "application/json"},
-            ...options
-        });
-        const result = await response.json().catch(() => ({code: 500, message: "解析失败"}));
-        if (!response.ok || result.code !== 200) {
-            throw new Error(result.message || "请求失败");
-        }
-        return result.data;
-    }
 
     async function loadCurrentProfile() {
         // 页面加载只读取当前画像，不在这里触发画像刷新。
@@ -496,14 +486,6 @@
         return String(value).replace("T", " ").slice(0, 19);
     }
 
-    function escapeHtml(value) {
-        return String(value ?? "")
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
 
     function escapeAttribute(value) {
         return escapeHtml(value).replace(/`/g, "&#096;");
